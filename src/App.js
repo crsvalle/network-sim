@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import NetworkVisualization from './components/NetworkVisualization';
+import NetworkVisualization from './components/NetworkVisualization'; 
 
 const socket = io('http://localhost:8000');
 
@@ -32,7 +32,7 @@ function App() {
   }, []);
 
   const sendMessage = () => {
-    socket.emit('sendMessage', { from: '192.168.1.1', to: '192.168.1.2' });
+    socket.emit('sendMessage', { from: '192.168.1.1', to: '192.168.1.4' });
   };
 
   return (
@@ -44,11 +44,23 @@ function App() {
         <p>Loading...</p>
       ) : (
         <>
-          <NetworkVisualization nodes={nodes} edges={edges} />
+          {nodes.length === 0 ? (
+            <p>No network data yet. Click "Send Message" to start!</p>
+          ) : (
+            <NetworkVisualization nodes={nodes} edges={edges} />
+          )}
           <div style={{ marginTop: '20px' }}>
             <h2>Messages</h2>
             {messages.map((msg, index) => (
-              <div key={index} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px' }}>
+              <div
+                key={index}
+                style={{
+                  marginBottom: '10px',
+                  padding: '10px',
+                  backgroundColor: '#f0f0f0',
+                  borderRadius: '5px',
+                }}
+              >
                 {msg}
               </div>
             ))}
