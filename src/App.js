@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import NetworkVisualization from './components/NetworkVisualization';
+
 import TopologyEditor from './components/TopologyEditor';
+
 
 const socket = io('http://localhost:8000');
 
@@ -72,7 +74,7 @@ function App() {
                   style={{
                     marginBottom: '10px',
                     padding: '10px',
-                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0',
+                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0', // yellowish for retries
                     border: `1px solid ${isRetry ? '#ffecb5' : '#ccc'}`,
                     borderRadius: '5px',
                   }}
