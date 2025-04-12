@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import NetworkVisualization from './components/NetworkVisualization';
+import TopologyEditor from './components/TopologyEditor';
 
 const socket = io('http://localhost:8000');
 
 function App() {
+  const [graph, setGraph] = useState({
+    '192.168.1.1': { '192.168.1.2': 1 },
+    '192.168.1.2': { '192.168.1.3': 2 },
+    '192.168.1.3': { '192.168.1.4': 1 },
+    '192.168.1.4': {},
+  });
+
   const [messages, setMessages] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
@@ -12,11 +20,9 @@ function App() {
 
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges }) => {
-      if (message) {
-        setMessages((prev) => [...prev, message]);
-      }
-      if (nodes) setNodes(nodes);
-      if (edges) setEdges(edges);
+      setMessages((prev) => [...prev, message]);
+      setNodes(nodes);
+      setEdges(edges);
       setLoading(false);
     });
 
@@ -32,12 +38,19 @@ function App() {
   }, []);
 
   const sendMessage = () => {
-    socket.emit('sendMessage', { from: '192.168.1.1', to: '192.168.1.4' });
+    socket.emit('sendMessage', {
+      from: '192.168.1.1',
+      to: '192.168.1.4',
+      graph,
+    });
   };
 
   return (
     <div>
       <h1>Network Simulation</h1>
+
+      <TopologyEditor graph={graph} setGraph={setGraph} />
+
       <button onClick={sendMessage}>Send Message</button>
 
       {loading ? (
@@ -59,7 +72,7 @@ function App() {
                   style={{
                     marginBottom: '10px',
                     padding: '10px',
-                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0', // yellowish for retries
+                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0',
                     border: `1px solid ${isRetry ? '#ffecb5' : '#ccc'}`,
                     borderRadius: '5px',
                   }}
