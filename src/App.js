@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import NetworkVisualization from './components/NetworkVisualization'; 
+import NetworkVisualization from './components/NetworkVisualization';
 
 const socket = io('http://localhost:8000');
 
@@ -51,19 +51,23 @@ function App() {
           )}
           <div style={{ marginTop: '20px' }}>
             <h2>Messages</h2>
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: '10px',
-                  padding: '10px',
-                  backgroundColor: '#f0f0f0',
-                  borderRadius: '5px',
-                }}
-              >
-                {msg}
-              </div>
-            ))}
+            {messages.map((msg, index) => {
+              const isRetry = msg.includes('(retry');
+              return (
+                <div
+                  key={index}
+                  style={{
+                    marginBottom: '10px',
+                    padding: '10px',
+                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0', // yellowish for retries
+                    border: `1px solid ${isRetry ? '#ffecb5' : '#ccc'}`,
+                    borderRadius: '5px',
+                  }}
+                >
+                  {msg}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
