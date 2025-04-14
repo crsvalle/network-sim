@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
+
 import NetworkVisualization from './components/NetworkVisualization';
 import TopologyEditor from './components/TopologyEditor';
+import NodeSelector from './components/NodeSelector';
+import MessagePanel from './components/MessagePanel';
+import GraphMetrics from './components/GraphMetrics';
 
 const socket = io('http://localhost:8000');
 
@@ -15,7 +19,11 @@ function App() {
     '192.168.1.3': { '192.168.1.4': 1 },
     '192.168.1.4': {}
   });
+
+  const [sourceNode, setSourceNode] = useState('');
+  const [destinationNode, setDestinationNode] = useState('');
   const [loading, setLoading] = useState(true);
+
   const [metrics, setMetrics] = useState({
     pathLength: 0,
     totalCost: 0,
@@ -63,11 +71,18 @@ function App() {
   }, []);
 
   const sendMessage = () => {
-    const from = '192.168.1.1';
-    const to = '192.168.1.4';
+    if (!sourceNode || !destinationNode) {
+      alert('Please select both source and destination.');
+      return;
+    }
 
-    if (!graph[from] || !graph[to]) {
-      alert('Please ensure both source and destination nodes exist.');
+    if (!graph[sourceNode] || !graph[destinationNode]) {
+      alert('Selected nodes do not exist in the graph.');
+      return;
+    }
+
+    if (sourceNode === destinationNode) {
+      alert('Source and destination cannot be the same.');
       return;
     }
 
@@ -77,7 +92,7 @@ function App() {
       totalCost: 0,
     }));
 
-    socket.emit('sendMessage', { from, to, graph });
+    socket.emit('sendMessage', { from: sourceNode, to: destinationNode, graph });
   };
 
   return (
@@ -85,6 +100,14 @@ function App() {
       <h1 style={{ textAlign: 'center' }}>📡 Network Simulation</h1>
 
       <TopologyEditor graph={graph} setGraph={setGraph} />
+
+      <NodeSelector
+        graph={graph}
+        sourceNode={sourceNode}
+        destinationNode={destinationNode}
+        setSourceNode={setSourceNode}
+        setDestinationNode={setDestinationNode}
+      />
 
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <button onClick={sendMessage}>📤 Send Message</button>
@@ -102,37 +125,9 @@ function App() {
             )}
           </div>
 
-          <div style={{ width: '450px', maxHeight: '500px', overflowY: 'auto' }}>
-            <h2>📨 Messages</h2>
-            {messages.map((msg, index) => {
-              const isRetry = msg.includes('(retry');
-              return (
-                <div
-                  key={index}
-                  style={{
-                    marginBottom: '10px',
-                    padding: '10px',
-                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0',
-                    border: `1px solid ${isRetry ? '#ffecb5' : '#ccc'}`,
-                    borderRadius: '5px',
-                  }}
-                >
-                  {msg}
-                </div>
-              );
-            })}
-
-            <div style={{ marginTop: '20px', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
-              <h2>📈 Graph Metrics</h2>
-              <ul style={{ lineHeight: '1.6' }}>
-                <li><strong>🧠 Nodes:</strong> {metrics.nodeCount}</li>
-                <li><strong>🔗 Links:</strong> {metrics.linkCount}</li>
-                <li><strong>🧭 Path Length:</strong> {metrics.pathLength} hops</li>
-                <li><strong>⚡ Total Cost:</strong> {metrics.totalCost}</li>
-                <li><strong>🔁 Retries:</strong> {metrics.retries}</li>
-                <li><strong>❌ Drops:</strong> {metrics.drops}</li>
-              </ul>
-            </div>
+          <div style={{ width: '450px' }}>
+            <MessagePanel messages={messages} />
+            <GraphMetrics metrics={metrics} />
           </div>
         </div>
       )}
