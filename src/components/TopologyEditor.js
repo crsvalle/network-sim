@@ -70,7 +70,7 @@ const TopologyEditor = ({ graph, setGraph }) => {
 
   return (
     <div style={{ marginBottom: '20px', padding: '15px', background: '#f4f4f4', borderRadius: '8px' }}>
-      <h2>🧰 Topology Editor</h2>
+      <h2>Topology Editor</h2>
 
       <button onClick={addNode}>➕ Add Random Node</button>
 
