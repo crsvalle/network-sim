@@ -23,6 +23,7 @@ function App() {
   const [sourceNode, setSourceNode] = useState('');
   const [destinationNode, setDestinationNode] = useState('');
   const [loading, setLoading] = useState(true);
+  const [animatePath, setAnimatePath] = useState([]);
 
   const [metrics, setMetrics] = useState({
     pathLength: 0,
@@ -34,7 +35,7 @@ function App() {
   });
 
   useEffect(() => {
-    socket.on('networkUpdate', ({ message, nodes, edges }) => {
+    socket.on('networkUpdate', ({ message, nodes, edges, path }) => {
       if (message) setMessages((prev) => [...prev, message]);
 
       const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
@@ -43,6 +44,8 @@ function App() {
       setNodes(safeNodes);
       setEdges(safeEdges);
       setLoading(false);
+
+      if (Array.isArray(path)) setAnimatePath(path);
 
       const retries = message.includes('(retry') ? 1 : 0;
       const drops = message.includes('❌') ? 1 : 0;
@@ -121,7 +124,7 @@ function App() {
             {nodes.length === 0 ? (
               <p>No network data yet. Click "Send Message" to start!</p>
             ) : (
-              <NetworkVisualization nodes={nodes} edges={edges} />
+              <NetworkVisualization nodes={nodes} edges={edges} animatePath={animatePath} />
             )}
           </div>
 

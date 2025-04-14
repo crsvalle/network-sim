@@ -1,15 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current || nodes.length === 0) return;
+    if (!containerRef.current || !nodes.length) return;
 
     const data = { nodes, edges };
-
     const options = {
       nodes: {
         shape: 'dot',
@@ -23,30 +22,40 @@ const NetworkVisualization = ({ nodes, edges }) => {
       },
       physics: {
         enabled: true,
-        solver: 'forceAtlas2Based',  // Adjusted for forceAtlas2
+        solver: 'forceAtlas2Based',
         forceAtlas2Based: {
-          gravitationalConstant: -26.2,  // Gravitational constant for the forceAtlas2 solver
-          centralGravity: 0.01,  // Adjusted gravity to keep nodes from colliding
-          springLength: 95,  // Spring length between nodes
-          springConstant: 0.08,  // Spring strength
+          gravitationalConstant: -26.2,
+          centralGravity: 0.01,
+          springLength: 95,
+          springConstant: 0.08,
         },
         stabilization: { iterations: 100 },
-        repulsion: {
-          nodeDistance: 200,  // Controls the repulsion strength between nodes
-          damping: 0.5,  // Adjusts the damping of node repulsion
-        },
       },
     };
 
     if (networkRef.current) {
-      networkRef.current.destroy();  // Destroy the previous network instance if any
+      networkRef.current.destroy();
     }
 
     networkRef.current = new Network(containerRef.current, data, options);
 
-  }, [nodes, edges]);
+    // Optional: Live packet animation
+    if (animatePath.length > 0) {
+      animatePath.forEach((nodeId, index) => {
+        setTimeout(() => {
+          const x = Math.cos(index) * 100;
+          const y = Math.sin(index) * 100;
 
-  return <div ref={containerRef} style={{ height: '500px' }} />;
+          if (networkRef.current?.moveNode) {
+            networkRef.current.moveNode(nodeId, x, y);
+          }
+        }, index * 600);
+      });
+    }
+
+  }, [nodes, edges, animatePath]);
+
+  return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
 
 export default NetworkVisualization;
