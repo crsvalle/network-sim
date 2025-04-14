@@ -1,15 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current || nodes.length === 0) return;
+    if (!containerRef.current || !nodes.length) return;
 
     const data = { nodes, edges };
-
     const options = {
       nodes: {
         shape: 'dot',
@@ -23,30 +22,55 @@ const NetworkVisualization = ({ nodes, edges }) => {
       },
       physics: {
         enabled: true,
-        solver: 'forceAtlas2Based',  // Adjusted for forceAtlas2
+        solver: 'forceAtlas2Based',
         forceAtlas2Based: {
-          gravitationalConstant: -26.2,  // Gravitational constant for the forceAtlas2 solver
-          centralGravity: 0.01,  // Adjusted gravity to keep nodes from colliding
-          springLength: 95,  // Spring length between nodes
-          springConstant: 0.08,  // Spring strength
+          gravitationalConstant: -26.2,
+          centralGravity: 0.01,
+          springLength: 95,
+          springConstant: 0.08,
         },
-        stabilization: { iterations: 100 },
-        repulsion: {
-          nodeDistance: 200,  // Controls the repulsion strength between nodes
-          damping: 0.5,  // Adjusts the damping of node repulsion
+        stabilization: {
+          iterations: 100,
+          fit: true,
         },
       },
     };
 
     if (networkRef.current) {
-      networkRef.current.destroy();  // Destroy the previous network instance if any
+      networkRef.current.destroy();
     }
 
     networkRef.current = new Network(containerRef.current, data, options);
 
-  }, [nodes, edges]);
+    networkRef.current.once('stabilizationIterationsDone', () => {
+      networkRef.current.setOptions({ physics: false });
+    });
 
-  return <div ref={containerRef} style={{ height: '500px' }} />;
+    if (animatePath.length > 0) {
+      animatePath.forEach((nodeId, index) => {
+        setTimeout(() => {
+          let pulseCount = 0;
+          const maxPulse = 3;
+          const interval = setInterval(() => {
+            const size = 20 + Math.sin(pulseCount * 0.5) * 10;
+            const node = networkRef.current?.body?.nodes[nodeId];
+            if (node) {
+              node.options.size = size;
+              networkRef.current.redraw();
+            }
+
+            pulseCount++;
+            if (pulseCount >= maxPulse * Math.PI) {
+              clearInterval(interval);
+            }
+          }, 100);
+        }, index * 800);
+      });
+    }
+
+  }, [nodes, edges, animatePath]);
+
+  return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
 
 export default NetworkVisualization;
