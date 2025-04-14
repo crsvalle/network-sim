@@ -81,52 +81,60 @@ function App() {
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>📡 Network Simulation</h1>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <h1 style={{ textAlign: 'center' }}>📡 Network Simulation</h1>
 
       <TopologyEditor graph={graph} setGraph={setGraph} />
 
-      <button onClick={sendMessage}>📤 Send Message</button>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <button onClick={sendMessage}>📤 Send Message</button>
+      </div>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <>
-          {!Array.isArray(nodes) || nodes.length === 0 ? (
-            <p>No network data yet. Click "Send Message" to start!</p>
-          ) : (
-            <NetworkVisualization nodes={nodes} edges={edges || []} />
-          )}
-
-          <div style={{ marginTop: '30px', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
-            <h2>📈 Graph Metrics</h2>
-            <ul style={{ lineHeight: '1.6' }}>
-              <li><strong>🧠 Nodes:</strong> {metrics.nodeCount}</li>
-              <li><strong>🔗 Links:</strong> {metrics.linkCount}</li>
-              <li><strong>🧭 Path Length:</strong> {metrics.pathLength} hops</li>
-              <li><strong>⚡ Total Cost:</strong> {metrics.totalCost}</li>
-              <li><strong>🔁 Retries:</strong> {metrics.retries}</li>
-              <li><strong>❌ Drops:</strong> {metrics.drops}</li>
-            </ul>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
+          <div style={{ flex: 1 }}>
+            {nodes.length === 0 ? (
+              <p>No network data yet. Click "Send Message" to start!</p>
+            ) : (
+              <NetworkVisualization nodes={nodes} edges={edges} />
+            )}
           </div>
 
-          <div style={{ marginTop: '20px' }}>
+          <div style={{ width: '450px', maxHeight: '500px', overflowY: 'auto' }}>
             <h2>📨 Messages</h2>
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: '10px',
-                  padding: '10px',
-                  backgroundColor: msg.includes('(retry') ? '#fff9c4' : '#f0f0f0',
-                  borderRadius: '5px',
-                }}
-              >
-                {msg}
-              </div>
-            ))}
+            {messages.map((msg, index) => {
+              const isRetry = msg.includes('(retry');
+              return (
+                <div
+                  key={index}
+                  style={{
+                    marginBottom: '10px',
+                    padding: '10px',
+                    backgroundColor: isRetry ? '#fff3cd' : '#f0f0f0',
+                    border: `1px solid ${isRetry ? '#ffecb5' : '#ccc'}`,
+                    borderRadius: '5px',
+                  }}
+                >
+                  {msg}
+                </div>
+              );
+            })}
+
+            <div style={{ marginTop: '20px', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
+              <h2>📈 Graph Metrics</h2>
+              <ul style={{ lineHeight: '1.6' }}>
+                <li><strong>🧠 Nodes:</strong> {metrics.nodeCount}</li>
+                <li><strong>🔗 Links:</strong> {metrics.linkCount}</li>
+                <li><strong>🧭 Path Length:</strong> {metrics.pathLength} hops</li>
+                <li><strong>⚡ Total Cost:</strong> {metrics.totalCost}</li>
+                <li><strong>🔁 Retries:</strong> {metrics.retries}</li>
+                <li><strong>❌ Drops:</strong> {metrics.drops}</li>
+              </ul>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
