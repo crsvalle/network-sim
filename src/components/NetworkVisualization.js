@@ -42,15 +42,23 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
         setTimeout(() => {
-          const x = index * 100;
-          const y = 0;
-          
-
-          if (networkRef.current?.moveNode) {
-            networkRef.current.moveNode(nodeId, x, y);
-          }
-        }, index * 600);
+          let pulseCount = 0;
+          const maxPulse = 3;
+          const interval = setInterval(() => {
+            const size = 20 + Math.sin(pulseCount * 0.5) * 10; // pulsing size
+            if (networkRef.current?.body?.nodes[nodeId]) {
+              networkRef.current.body.nodes[nodeId].options.size = size;
+              networkRef.current.redraw();
+            }
+      
+            pulseCount++;
+            if (pulseCount >= maxPulse * Math.PI) {
+              clearInterval(interval);
+            }
+          }, 100);
+        }, index * 800);
       });
+      
     }
 
   }, [nodes, edges, animatePath]);
