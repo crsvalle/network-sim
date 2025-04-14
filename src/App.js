@@ -19,6 +19,8 @@ function App() {
     '192.168.1.3': { '192.168.1.4': 1 },
     '192.168.1.4': {}
   });
+  const [isAnimating, setIsAnimating] = useState(false);
+
 
   const [sourceNode, setSourceNode] = useState('');
   const [destinationNode, setDestinationNode] = useState('');
@@ -37,6 +39,10 @@ function App() {
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges, path }) => {
       if (message) setMessages((prev) => [...prev, message]);
+      if (message?.includes('✅ Arrived')) {
+        setTimeout(() => setIsAnimating(false), 800); // slight delay to finish visual
+      }
+
 
       const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
       const safeEdges = Array.isArray(edges) ? edges.filter(e => e && e.from && e.to) : [];
@@ -74,6 +80,8 @@ function App() {
   }, []);
 
   const sendMessage = () => {
+    if (isAnimating) return;
+
     if (!sourceNode || !destinationNode) {
       alert('Please select both source and destination.');
       return;
@@ -95,6 +103,9 @@ function App() {
       totalCost: 0,
     }));
 
+    setMessages([]);
+    setIsAnimating(true);
+
     socket.emit('sendMessage', { from: sourceNode, to: destinationNode, graph });
   };
 
@@ -113,7 +124,9 @@ function App() {
       />
 
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={sendMessage}>📤 Send Message</button>
+        <button onClick={sendMessage} disabled={isAnimating}>
+          {isAnimating ? '⏳ Sending...' : '📤 Send Message'}
+        </button>
       </div>
 
       {loading ? (
