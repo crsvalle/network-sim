@@ -39,12 +39,12 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
 
     networkRef.current = new Network(containerRef.current, data, options);
 
-    // Optional: Live packet animation
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
         setTimeout(() => {
-          const x = Math.cos(index) * 100;
-          const y = Math.sin(index) * 100;
+          const x = index * 100;
+          const y = 0;
+          
 
           if (networkRef.current?.moveNode) {
             networkRef.current.moveNode(nodeId, x, y);
