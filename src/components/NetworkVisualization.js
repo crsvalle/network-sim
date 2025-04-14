@@ -9,6 +9,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
     if (!containerRef.current || !nodes.length) return;
 
     const data = { nodes, edges };
+
     const options = {
       nodes: {
         shape: 'dot',
@@ -31,8 +32,11 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
         },
         stabilization: {
           iterations: 100,
-          fit: true,
-        },
+          fit: true
+        }
+      },
+      layout: {
+        improvedLayout: true,
       },
     };
 
@@ -40,10 +44,20 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
       networkRef.current.destroy();
     }
 
-    networkRef.current = new Network(containerRef.current, data, options);
+    const network = new Network(containerRef.current, data, options);
+    networkRef.current = network;
 
-    networkRef.current.once('stabilizationIterationsDone', () => {
-      networkRef.current.setOptions({ physics: false });
+    // after stabilization, freeze layout
+    network.once('stabilizationIterationsDone', () => {
+      network.setOptions({ physics: false }); // turn off physics
+      const positions = network.getPositions();
+      const updatedNodes = nodes.map(node => ({
+        ...node,
+        fixed: { x: true, y: true },
+        x: positions[node.id]?.x,
+        y: positions[node.id]?.y,
+      }));
+      network.setData({ nodes: updatedNodes, edges });
     });
 
     if (animatePath.length > 0) {
@@ -53,9 +67,8 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
           const maxPulse = 3;
           const interval = setInterval(() => {
             const size = 20 + Math.sin(pulseCount * 0.5) * 10;
-            const node = networkRef.current?.body?.nodes[nodeId];
-            if (node) {
-              node.options.size = size;
+            if (networkRef.current?.body?.nodes[nodeId]) {
+              networkRef.current.body.nodes[nodeId].options.size = size;
               networkRef.current.redraw();
             }
 
