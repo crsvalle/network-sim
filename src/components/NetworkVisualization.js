@@ -29,7 +29,10 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
           springLength: 95,
           springConstant: 0.08,
         },
-        stabilization: { iterations: 100 },
+        stabilization: {
+          iterations: 100,
+          fit: true,
+        },
       },
     };
 
@@ -39,18 +42,23 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
 
     networkRef.current = new Network(containerRef.current, data, options);
 
+    networkRef.current.once('stabilizationIterationsDone', () => {
+      networkRef.current.setOptions({ physics: false });
+    });
+
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
         setTimeout(() => {
           let pulseCount = 0;
           const maxPulse = 3;
           const interval = setInterval(() => {
-            const size = 20 + Math.sin(pulseCount * 0.5) * 10; // pulsing size
-            if (networkRef.current?.body?.nodes[nodeId]) {
-              networkRef.current.body.nodes[nodeId].options.size = size;
+            const size = 20 + Math.sin(pulseCount * 0.5) * 10;
+            const node = networkRef.current?.body?.nodes[nodeId];
+            if (node) {
+              node.options.size = size;
               networkRef.current.redraw();
             }
-      
+
             pulseCount++;
             if (pulseCount >= maxPulse * Math.PI) {
               clearInterval(interval);
@@ -58,7 +66,6 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
           }, 100);
         }, index * 800);
       });
-      
     }
 
   }, [nodes, edges, animatePath]);
