@@ -7,9 +7,10 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
 
   useEffect(() => {
     if (!containerRef.current || !nodes.length) return;
-
+  
     const data = { nodes, edges };
-
+    const animationIntervals = [];
+  
     const options = {
       nodes: {
         shape: 'dot',
@@ -22,66 +23,60 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [] }) => {
         color: { highlight: '#ff9800' },
       },
       physics: {
-        enabled: true,
-        solver: 'forceAtlas2Based',
-        forceAtlas2Based: {
-          gravitationalConstant: -26.2,
-          centralGravity: 0.01,
-          springLength: 95,
-          springConstant: 0.08,
-        },
-        stabilization: {
-          iterations: 100,
-          fit: true
-        }
-      },
-      layout: {
-        improvedLayout: true,
+        enabled: false, // already stabilized layout
       },
     };
-
+  
     if (networkRef.current) {
       networkRef.current.destroy();
     }
-
-    const network = new Network(containerRef.current, data, options);
-    networkRef.current = network;
-
-    // after stabilization, freeze layout
-    network.once('stabilizationIterationsDone', () => {
-      network.setOptions({ physics: false }); // turn off physics
-      const positions = network.getPositions();
-      const updatedNodes = nodes.map(node => ({
-        ...node,
-        fixed: { x: true, y: true },
-        x: positions[node.id]?.x,
-        y: positions[node.id]?.y,
-      }));
-      network.setData({ nodes: updatedNodes, edges });
-    });
-
+  
+    networkRef.current = new Network(containerRef.current, data, options);
+  
+    const originalSizes = {};
+  
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           let pulseCount = 0;
           const maxPulse = 3;
-          const interval = setInterval(() => {
+          const intervalId = setInterval(() => {
             const size = 20 + Math.sin(pulseCount * 0.5) * 10;
+  
             if (networkRef.current?.body?.nodes[nodeId]) {
-              networkRef.current.body.nodes[nodeId].options.size = size;
+              const node = networkRef.current.body.nodes[nodeId];
+  
+              if (!(nodeId in originalSizes)) {
+                originalSizes[nodeId] = node.options.size;
+              }
+  
+              node.options.size = size;
               networkRef.current.redraw();
             }
-
+  
             pulseCount++;
             if (pulseCount >= maxPulse * Math.PI) {
-              clearInterval(interval);
+              clearInterval(intervalId);
+              if (networkRef.current?.body?.nodes[nodeId]) {
+                networkRef.current.body.nodes[nodeId].options.size = originalSizes[nodeId] || 20;
+                networkRef.current.redraw();
+              }
             }
           }, 100);
+  
+          animationIntervals.push(intervalId);
         }, index * 800);
+  
+        animationIntervals.push(timeoutId);
       });
     }
-
+  
+    return () => {
+      animationIntervals.forEach(clearTimeout);
+      animationIntervals.forEach(clearInterval);
+    };
   }, [nodes, edges, animatePath]);
+  
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
