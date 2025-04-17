@@ -158,7 +158,7 @@ function App() {
             <NetworkVisualization
               nodes={nodes}
               edges={edges}
-              animatePath={Object.values(paths)} 
+              animatePath={Object.values(paths)}
             />
           </div>
           <div style={{ width: '450px' }}>
