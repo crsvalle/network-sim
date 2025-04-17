@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-
 import NetworkVisualization from './components/NetworkVisualization';
 import TopologyEditor from './components/TopologyEditor';
 import NodeSelector from './components/NodeSelector';
@@ -27,9 +26,8 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [logs, setLogs] = useState({});
   const [paths, setPaths] = useState({});
-
-  const [metricsBySimId, setMetricsBySimId] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
+  const [metricsBySim, setMetricsBySim] = useState({});
 
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -62,7 +60,7 @@ function App() {
       const retries = message?.includes('(retry') ? 1 : 0;
       const drops = message?.includes('❌') ? 1 : 0;
 
-      setMetricsBySimId((prev) => ({
+      setMetricsBySim((prev) => ({
         ...prev,
         [simulationId]: {
           pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
@@ -73,7 +71,7 @@ function App() {
           drops: (prev[simulationId]?.drops || 0) + drops,
           nodeCount: safeNodes.length,
           linkCount: safeEdges.length,
-        }
+        },
       }));
     });
 
@@ -127,6 +125,33 @@ function App() {
     }, 6000);
   };
 
+  const currentMetrics = metricsBySim[activeSimId] || {
+    pathLength: 0,
+    totalCost: 0,
+    retries: 0,
+    drops: 0,
+    nodeCount: 0,
+    linkCount: 0,
+  };
+  const onCloseTab = (simId) => {
+    setLogs((prev) => {
+      const updated = { ...prev };
+      delete updated[simId];
+      return updated;
+    });
+  
+    setPaths((prev) => {
+      const updated = { ...prev };
+      delete updated[simId];
+      return updated;
+    });
+  
+    if (simId === activeSimId) {
+      const remaining = Object.keys(logs).filter(id => id !== simId);
+      setActiveSimId(remaining[0] || null);
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <h1 style={{ textAlign: 'center' }}>📡 Network Simulation</h1>
@@ -152,20 +177,16 @@ function App() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
           <div style={{ flex: 1 }}>
-            <NetworkVisualization
-              nodes={nodes}
-              edges={edges}
-              animatePath={Object.values(paths)}
-            />
+            <NetworkVisualization nodes={nodes} edges={edges} animatePath={Object.values(paths)} />
           </div>
           <div style={{ width: '450px' }}>
             <TabbedMessagePanel
               logs={logs}
               packetColors={packetColors}
               setActiveSimId={setActiveSimId}
+              onCloseTab={onCloseTab}
             />
-            <GraphMetrics metrics={metricsBySimId[activeSimId] || {}} />
-
+            <GraphMetrics metrics={currentMetrics} />
           </div>
         </div>
       )}
