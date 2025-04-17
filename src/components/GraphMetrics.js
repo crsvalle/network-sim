@@ -1,7 +1,7 @@
 
-const GraphMetrics = ({ metrics }) => (
+const GraphMetrics = ({ metrics, activeSimId }) => (
   <div style={{ marginTop: '20px', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
-    <h2>📈 Graph Metrics</h2>
+    <h2>Metrics (Simulation {activeSimId?.slice(0, 6)})</h2>
     <ul style={{ lineHeight: '1.6' }}>
       <li><strong>🧠 Nodes:</strong> {metrics.nodeCount}</li>
       <li><strong>🔗 Links:</strong> {metrics.linkCount}</li>

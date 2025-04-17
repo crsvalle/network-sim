@@ -212,7 +212,7 @@ function App() {
               setUnreadCounts={setUnreadCounts}
               onCloseTab={onCloseTab}
             />
-            <GraphMetrics metrics={currentMetrics} />
+            <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
           </div>
         </div>
       )}
