@@ -4,28 +4,29 @@ import io from 'socket.io-client';
 import NetworkVisualization from './components/NetworkVisualization';
 import TopologyEditor from './components/TopologyEditor';
 import NodeSelector from './components/NodeSelector';
-import MessagePanel from './components/MessagePanel';
+import TabbedMessagePanel from './components/TabbedMessagePanel';
 import GraphMetrics from './components/GraphMetrics';
 
 const socket = io('http://localhost:8000');
+const MAX_PARALLEL_MESSAGES = 2;
 
 function App() {
-  const [messages, setMessages] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [graph, setGraph] = useState({
     '192.168.1.1': { '192.168.1.2': 1, '192.168.1.3': 4 },
     '192.168.1.2': { '192.168.1.3': 2, '192.168.1.4': 5 },
     '192.168.1.3': { '192.168.1.4': 1 },
-    '192.168.1.4': {}
+    '192.168.1.4': {},
   });
-  const [isAnimating, setIsAnimating] = useState(false);
-
 
   const [sourceNode, setSourceNode] = useState('');
   const [destinationNode, setDestinationNode] = useState('');
   const [loading, setLoading] = useState(true);
-  const [animatePath, setAnimatePath] = useState([]);
+  const [pathsInFlight, setPathsInFlight] = useState([]);
+  const [packetColors, setPacketColors] = useState({});
+  const [logs, setLogs] = useState({});
+  const [paths, setPaths] = useState({});
 
   const [metrics, setMetrics] = useState({
     pathLength: 0,
@@ -36,13 +37,26 @@ function App() {
     linkCount: 0,
   });
 
-  useEffect(() => {
-    socket.on('networkUpdate', ({ message, nodes, edges, path }) => {
-      if (message) setMessages((prev) => [...prev, message]);
-      if (message?.includes('✅ Arrived')) {
-        setTimeout(() => setIsAnimating(false), 800); // slight delay to finish visual
-      }
+  const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
+  useEffect(() => {
+    socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
+      if (!simulationId) return;
+
+      const tag = colorId != null ? `[${colorId}] ` : '';
+      const fullMessage = tag + message;
+
+      setLogs((prev) => ({
+        ...prev,
+        [simulationId]: [...(prev[simulationId] || []), fullMessage],
+      }));
+
+      if (Array.isArray(path)) {
+        setPaths((prev) => ({
+          ...prev,
+          [simulationId]: path,
+        }));
+      }
 
       const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
       const safeEdges = Array.isArray(edges) ? edges.filter(e => e && e.from && e.to) : [];
@@ -51,10 +65,8 @@ function App() {
       setEdges(safeEdges);
       setLoading(false);
 
-      if (Array.isArray(path)) setAnimatePath(path);
-
-      const retries = message.includes('(retry') ? 1 : 0;
-      const drops = message.includes('❌') ? 1 : 0;
+      const retries = message?.includes('(retry') ? 1 : 0;
+      const drops = message?.includes('❌') ? 1 : 0;
 
       setMetrics((prev) => ({
         pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
@@ -80,7 +92,10 @@ function App() {
   }, []);
 
   const sendMessage = () => {
-    if (isAnimating) return;
+    if (pathsInFlight.length >= MAX_PARALLEL_MESSAGES) {
+      alert('Please wait – packet limit reached.');
+      return;
+    }
 
     if (!sourceNode || !destinationNode) {
       alert('Please select both source and destination.');
@@ -97,16 +112,22 @@ function App() {
       return;
     }
 
-    setMetrics((prev) => ({
-      ...prev,
-      pathLength: 0,
-      totalCost: 0,
-    }));
+    const newId = pathsInFlight.length;
+    const assignedColor = COLORS[newId % COLORS.length];
 
-    setMessages([]);
-    setIsAnimating(true);
+    setPathsInFlight((prev) => [...prev, newId]);
+    setPacketColors((prev) => ({ ...prev, [newId]: assignedColor }));
 
-    socket.emit('sendMessage', { from: sourceNode, to: destinationNode, graph });
+    socket.emit('sendMessage', {
+      from: sourceNode,
+      to: destinationNode,
+      graph,
+      colorId: newId,
+    });
+
+    setTimeout(() => {
+      setPathsInFlight((prev) => prev.filter((id) => id !== newId));
+    }, 6000);
   };
 
   return (
@@ -124,8 +145,8 @@ function App() {
       />
 
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={sendMessage} disabled={isAnimating}>
-          {isAnimating ? '⏳ Sending...' : '📤 Send Message'}
+        <button onClick={sendMessage} disabled={pathsInFlight.length >= MAX_PARALLEL_MESSAGES}>
+          {pathsInFlight.length >= MAX_PARALLEL_MESSAGES ? '⏳ Sending...' : '📤 Send Message'}
         </button>
       </div>
 
@@ -134,15 +155,14 @@ function App() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
           <div style={{ flex: 1 }}>
-            {nodes.length === 0 ? (
-              <p>No network data yet. Click "Send Message" to start!</p>
-            ) : (
-              <NetworkVisualization nodes={nodes} edges={edges} animatePath={animatePath} />
-            )}
+            <NetworkVisualization
+              nodes={nodes}
+              edges={edges}
+              animatePath={Object.values(paths)} 
+            />
           </div>
-
           <div style={{ width: '450px' }}>
-            <MessagePanel messages={messages} />
+            <TabbedMessagePanel logs={logs} packetColors={packetColors} />
             <GraphMetrics metrics={metrics} />
           </div>
         </div>
