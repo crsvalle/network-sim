@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
+
 import NetworkVisualization from './components/NetworkVisualization';
 import TopologyEditor from './components/TopologyEditor';
 import NodeSelector from './components/NodeSelector';
-import MessagePanel from './components/MessagePanel';
+import TabbedMessagePanel from './components/TabbedMessagePanel';
 import GraphMetrics from './components/GraphMetrics';
 
 const socket = io('http://localhost:8000');
 const MAX_PARALLEL_MESSAGES = 2;
 
 function App() {
-  const [messages, setMessages] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [graph, setGraph] = useState({
     '192.168.1.1': { '192.168.1.2': 1, '192.168.1.3': 4 },
     '192.168.1.2': { '192.168.1.3': 2, '192.168.1.4': 5 },
     '192.168.1.3': { '192.168.1.4': 1 },
-    '192.168.1.4': {}
+    '192.168.1.4': {},
   });
 
   const [sourceNode, setSourceNode] = useState('');
@@ -25,6 +25,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [pathsInFlight, setPathsInFlight] = useState([]);
   const [packetColors, setPacketColors] = useState({});
+  const [logs, setLogs] = useState({});
+  const [paths, setPaths] = useState({});
 
   const [metrics, setMetrics] = useState({
     pathLength: 0,
@@ -38,10 +40,22 @@ function App() {
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
   useEffect(() => {
-    socket.on('networkUpdate', ({ message, nodes, edges, path, colorId }) => {
-      if (message) {
-        const tag = colorId != null ? `[${colorId}] ` : '';
-        setMessages((prev) => [...prev, tag + message]);
+    socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
+      if (!simulationId) return;
+
+      const tag = colorId != null ? `[${colorId}] ` : '';
+      const fullMessage = tag + message;
+
+      setLogs((prev) => ({
+        ...prev,
+        [simulationId]: [...(prev[simulationId] || []), fullMessage],
+      }));
+
+      if (Array.isArray(path)) {
+        setPaths((prev) => ({
+          ...prev,
+          [simulationId]: path,
+        }));
       }
 
       const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
@@ -111,10 +125,9 @@ function App() {
       colorId: newId,
     });
 
-    // Simulate animation done after timeout
     setTimeout(() => {
       setPathsInFlight((prev) => prev.filter((id) => id !== newId));
-    }, 6000); // throttle duration window
+    }, 6000);
   };
 
   return (
@@ -142,10 +155,14 @@ function App() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
           <div style={{ flex: 1 }}>
-            <NetworkVisualization nodes={nodes} edges={edges} animatePath={[]} />
+            <NetworkVisualization
+              nodes={nodes}
+              edges={edges}
+              animatePath={Object.values(paths)}
+            />
           </div>
           <div style={{ width: '450px' }}>
-            <MessagePanel messages={messages} packetColors={packetColors} />
+            <TabbedMessagePanel logs={logs} packetColors={packetColors} />
             <GraphMetrics metrics={metrics} />
           </div>
         </div>
