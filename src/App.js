@@ -28,14 +28,8 @@ function App() {
   const [logs, setLogs] = useState({});
   const [paths, setPaths] = useState({});
 
-  const [metrics, setMetrics] = useState({
-    pathLength: 0,
-    totalCost: 0,
-    retries: 0,
-    drops: 0,
-    nodeCount: 0,
-    linkCount: 0,
-  });
+  const [metricsBySimId, setMetricsBySimId] = useState({});
+  const [activeSimId, setActiveSimId] = useState(null);
 
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -68,15 +62,18 @@ function App() {
       const retries = message?.includes('(retry') ? 1 : 0;
       const drops = message?.includes('❌') ? 1 : 0;
 
-      setMetrics((prev) => ({
-        pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
-        totalCost: safeEdges
-          .filter(e => e.color?.color === '#4caf50')
-          .reduce((sum, e) => sum + parseInt(e.label), 0),
-        retries: prev.retries + retries,
-        drops: prev.drops + drops,
-        nodeCount: safeNodes.length,
-        linkCount: safeEdges.length,
+      setMetricsBySimId((prev) => ({
+        ...prev,
+        [simulationId]: {
+          pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
+          totalCost: safeEdges
+            .filter(e => e.color?.color === '#4caf50')
+            .reduce((sum, e) => sum + parseInt(e.label), 0),
+          retries: (prev[simulationId]?.retries || 0) + retries,
+          drops: (prev[simulationId]?.drops || 0) + drops,
+          nodeCount: safeNodes.length,
+          linkCount: safeEdges.length,
+        }
       }));
     });
 
@@ -162,8 +159,13 @@ function App() {
             />
           </div>
           <div style={{ width: '450px' }}>
-            <TabbedMessagePanel logs={logs} packetColors={packetColors} />
-            <GraphMetrics metrics={metrics} />
+            <TabbedMessagePanel
+              logs={logs}
+              packetColors={packetColors}
+              setActiveSimId={setActiveSimId}
+            />
+            <GraphMetrics metrics={metricsBySimId[activeSimId] || {}} />
+
           </div>
         </div>
       )}
