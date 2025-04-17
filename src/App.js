@@ -29,7 +29,8 @@ function App() {
   const [activeSimId, setActiveSimId] = useState(null);
   const [metricsBySim, setMetricsBySim] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
-  const [nodeSnapshots, setNodeSnapshots] = useState({}); // <== new
+  const [nodeSnapshots, setNodeSnapshots] = useState({});
+  const [replayState, setReplayState] = useState({ simId: null, index: 0 });
 
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -82,7 +83,6 @@ function App() {
           linkCount: safeEdges.length,
         },
       }));
-
 
       setNodeSnapshots((prev) => ({
         ...prev,
@@ -145,9 +145,24 @@ function App() {
     if (!snapshots) return;
 
     let i = 0;
+    setReplayState({ simId, index: 0 });
+
     const interval = setInterval(() => {
       if (i >= snapshots.length) return clearInterval(interval);
       setNodes(snapshots[i]);
+
+      // Set the currently highlighted node
+      const activeNode = snapshots[i].find(n => n.color === '#f44336');
+      if (activeNode) {
+        const updated = snapshots[i].map(n =>
+          n.id === activeNode.id
+            ? { ...n, color: '#ffeb3b' } // yellow highlight
+            : n
+        );
+        setNodes(updated);
+      }
+
+      setReplayState({ simId, index: i });
       i++;
     }, 800);
   };
@@ -221,24 +236,35 @@ function App() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
-          <div style={{ flex: 1 }}>
-            <NetworkVisualization nodes={nodes} edges={edges} animatePath={Object.values(paths)} />
+        <>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
+            <div style={{ flex: 1 }}>
+              <NetworkVisualization
+                nodes={nodes}
+                edges={edges}
+                animatePath={Object.values(paths)}
+              />
+              {replayState.simId && (
+                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                  🕒 Step {replayState.index + 1} / {nodeSnapshots[replayState.simId]?.length || 0}
+                </div>
+              )}
+            </div>
+            <div style={{ width: '450px' }}>
+              <TabbedMessagePanel
+                logs={logs}
+                packetColors={packetColors}
+                setActiveSimId={setActiveSimId}
+                activeSimId={activeSimId}
+                unreadCounts={unreadCounts}
+                setUnreadCounts={setUnreadCounts}
+                onCloseTab={onCloseTab}
+                replaySimulation={replaySimulation}
+              />
+              <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
+            </div>
           </div>
-          <div style={{ width: '450px' }}>
-            <TabbedMessagePanel
-              logs={logs}
-              packetColors={packetColors}
-              setActiveSimId={setActiveSimId}
-              activeSimId={activeSimId}
-              unreadCounts={unreadCounts}
-              setUnreadCounts={setUnreadCounts}
-              onCloseTab={onCloseTab}
-              replaySimulation={replaySimulation}
-            />
-            <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
