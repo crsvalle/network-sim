@@ -28,6 +28,7 @@ function App() {
   const [paths, setPaths] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [metricsBySim, setMetricsBySim] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -38,10 +39,19 @@ function App() {
       const tag = colorId != null ? `[${colorId}] ` : '';
       const fullMessage = tag + message;
 
+      // Append to message logs
       setLogs((prev) => ({
         ...prev,
         [simulationId]: [...(prev[simulationId] || []), fullMessage],
       }));
+
+      // Unread indicator update
+      if (simulationId !== activeSimId) {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [simulationId]: (prev[simulationId] || 0) + 1,
+        }));
+      }
 
       if (Array.isArray(path)) {
         setPaths((prev) => ({
@@ -84,7 +94,7 @@ function App() {
       socket.off('networkUpdate');
       socket.off('connect_error');
     };
-  }, []);
+  }, [activeSimId]); // dependency here ensures unread resets on tab switch
 
   const sendMessage = () => {
     if (pathsInFlight.length >= MAX_PARALLEL_MESSAGES) {
@@ -133,19 +143,32 @@ function App() {
     nodeCount: 0,
     linkCount: 0,
   };
+
   const onCloseTab = (simId) => {
     setLogs((prev) => {
       const updated = { ...prev };
       delete updated[simId];
       return updated;
     });
-  
+
     setPaths((prev) => {
       const updated = { ...prev };
       delete updated[simId];
       return updated;
     });
-  
+
+    setMetricsBySim((prev) => {
+      const updated = { ...prev };
+      delete updated[simId];
+      return updated;
+    });
+
+    setUnreadCounts((prev) => {
+      const updated = { ...prev };
+      delete updated[simId];
+      return updated;
+    });
+
     if (simId === activeSimId) {
       const remaining = Object.keys(logs).filter(id => id !== simId);
       setActiveSimId(remaining[0] || null);
@@ -184,6 +207,9 @@ function App() {
               logs={logs}
               packetColors={packetColors}
               setActiveSimId={setActiveSimId}
+              activeSimId={activeSimId}
+              unreadCounts={unreadCounts}
+              setUnreadCounts={setUnreadCounts}
               onCloseTab={onCloseTab}
             />
             <GraphMetrics metrics={currentMetrics} />
