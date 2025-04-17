@@ -29,6 +29,7 @@ function App() {
   const [activeSimId, setActiveSimId] = useState(null);
   const [metricsBySim, setMetricsBySim] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [nodeSnapshots, setNodeSnapshots] = useState({}); // <== new
 
   const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -39,13 +40,11 @@ function App() {
       const tag = colorId != null ? `[${colorId}] ` : '';
       const fullMessage = tag + message;
 
-      // Append to message logs
       setLogs((prev) => ({
         ...prev,
         [simulationId]: [...(prev[simulationId] || []), fullMessage],
       }));
 
-      // Unread indicator update
       if (simulationId !== activeSimId) {
         setUnreadCounts((prev) => ({
           ...prev,
@@ -83,6 +82,12 @@ function App() {
           linkCount: safeEdges.length,
         },
       }));
+
+
+      setNodeSnapshots((prev) => ({
+        ...prev,
+        [simulationId]: [...(prev[simulationId] || []), safeNodes],
+      }));
     });
 
     socket.on('connect_error', (error) => {
@@ -94,7 +99,7 @@ function App() {
       socket.off('networkUpdate');
       socket.off('connect_error');
     };
-  }, [activeSimId]); // dependency here ensures unread resets on tab switch
+  }, [activeSimId]);
 
   const sendMessage = () => {
     if (pathsInFlight.length >= MAX_PARALLEL_MESSAGES) {
@@ -135,13 +140,16 @@ function App() {
     }, 6000);
   };
 
-  const currentMetrics = metricsBySim[activeSimId] || {
-    pathLength: 0,
-    totalCost: 0,
-    retries: 0,
-    drops: 0,
-    nodeCount: 0,
-    linkCount: 0,
+  const replaySimulation = (simId) => {
+    const snapshots = nodeSnapshots[simId];
+    if (!snapshots) return;
+
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= snapshots.length) return clearInterval(interval);
+      setNodes(snapshots[i]);
+      i++;
+    }, 800);
   };
 
   const onCloseTab = (simId) => {
@@ -169,10 +177,25 @@ function App() {
       return updated;
     });
 
+    setNodeSnapshots((prev) => {
+      const updated = { ...prev };
+      delete updated[simId];
+      return updated;
+    });
+
     if (simId === activeSimId) {
       const remaining = Object.keys(logs).filter(id => id !== simId);
       setActiveSimId(remaining[0] || null);
     }
+  };
+
+  const currentMetrics = metricsBySim[activeSimId] || {
+    pathLength: 0,
+    totalCost: 0,
+    retries: 0,
+    drops: 0,
+    nodeCount: 0,
+    linkCount: 0,
   };
 
   return (
@@ -211,6 +234,7 @@ function App() {
               unreadCounts={unreadCounts}
               setUnreadCounts={setUnreadCounts}
               onCloseTab={onCloseTab}
+              replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
           </div>

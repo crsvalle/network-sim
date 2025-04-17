@@ -8,11 +8,11 @@ const TabbedMessagePanel = ({
   unreadCounts,
   setUnreadCounts,
   onCloseTab,
+  replaySimulation,
 }) => {
   const simulationIds = Object.keys(logs);
   const [activeTab, setActiveTab] = useState(simulationIds[0] || null);
 
-  // When tab changes, update parent and reset unread
   useEffect(() => {
     if (activeTab) {
       setActiveSimId(activeTab);
@@ -23,7 +23,6 @@ const TabbedMessagePanel = ({
     }
   }, [activeTab, setActiveSimId, setUnreadCounts]);
 
-  // If tabs are added dynamically, auto-select the first one
   useEffect(() => {
     if (!activeTab && simulationIds.length > 0) {
       setActiveTab(simulationIds[0]);
@@ -50,7 +49,6 @@ const TabbedMessagePanel = ({
                   background: isActive ? '#e3f2fd' : '#fff',
                   cursor: 'pointer',
                   fontSize: '12px',
-                  position: 'relative',
                 }}
               >
                 Sim {id.slice(0, 6)}...
@@ -87,6 +85,20 @@ const TabbedMessagePanel = ({
               >
                 ✕
               </button>
+              {isActive && (
+                <button
+                  onClick={() => replaySimulation(id)}
+                  style={{
+                    marginLeft: '4px',
+                    fontSize: '10px',
+                    background: '#eee',
+                    border: '1px solid #ccc',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ▶ Replay
+                </button>
+              )}
             </div>
           );
         })}
