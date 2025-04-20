@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import io from 'socket.io-client';
+import { simulationReducer, initialState } from './simulationReducer';
 
 const socket = io('http://localhost:8000');
 
 export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading) {
-  const [logs, setLogs] = useState({});
-  const [paths, setPaths] = useState({});
-  const [metricsBySim, setMetricsBySim] = useState({});
-  const [unreadCounts, setUnreadCounts] = useState({});
-  const [nodeSnapshots, setNodeSnapshots] = useState({});
-
+  const [state, dispatch] = useReducer(simulationReducer, initialState);
 
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
@@ -18,20 +14,14 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       const tag = colorId != null ? `[${colorId}] ` : '';
       const fullMessage = tag + message;
 
-      setLogs(prev => ({
-        ...prev,
-        [simulationId]: [...(prev[simulationId] || []), fullMessage],
-      }));
+      dispatch({ type: 'ADD_LOG', simId: simulationId, message: fullMessage });
 
       if (simulationId !== activeSimId) {
-        setUnreadCounts(prev => ({
-          ...prev,
-          [simulationId]: (prev[simulationId] || 0) + 1,
-        }));
+        dispatch({ type: 'INCREMENT_UNREAD', simId: simulationId });
       }
 
       if (Array.isArray(path)) {
-        setPaths(prev => ({ ...prev, [simulationId]: path }));
+        dispatch({ type: 'ADD_PATH', simId: simulationId, path });
       }
 
       const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
@@ -44,24 +34,19 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       const retries = message?.includes('(retry') ? 1 : 0;
       const drops = message?.includes('❌') ? 1 : 0;
 
-      setMetricsBySim(prev => ({
-        ...prev,
-        [simulationId]: {
-          pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
-          totalCost: safeEdges
-            .filter(e => e.color?.color === '#4caf50')
-            .reduce((sum, e) => sum + parseInt(e.label), 0),
-          retries: (prev[simulationId]?.retries || 0) + retries,
-          drops: (prev[simulationId]?.drops || 0) + drops,
-          nodeCount: safeNodes.length,
-          linkCount: safeEdges.length,
-        },
-      }));
+      const metrics = {
+        pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
+        totalCost: safeEdges
+          .filter(e => e.color?.color === '#4caf50')
+          .reduce((sum, e) => sum + parseInt(e.label), 0),
+        retries,
+        drops,
+        nodeCount: safeNodes.length,
+        linkCount: safeEdges.length,
+      };
 
-      setNodeSnapshots(prev => ({
-        ...prev,
-        [simulationId]: [...(prev[simulationId] || []), safeNodes],
-      }));
+      dispatch({ type: 'ADD_METRICS', simId: simulationId, metrics });
+      dispatch({ type: 'ADD_SNAPSHOT', simId: simulationId, snapshot: safeNodes });
     });
 
     socket.on('connect_error', (error) => {
@@ -73,15 +58,15 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       socket.off('networkUpdate');
       socket.off('connect_error');
     };
-    // eslint-disable-next-line
-  }, [activeSimId]);
+  }, [activeSimId, setNodes, setEdges, setLoading]);
 
   return {
     socket,
-    logs,
-    paths,
-    metricsBySim,
-    unreadCounts,
-    nodeSnapshots,
+    logs: state.logs,
+    paths: state.paths,
+    metricsBySim: state.metricsBySim,
+    unreadCounts: state.unreadCounts,
+    nodeSnapshots: state.nodeSnapshots,
+    dispatch,
   };
 }
