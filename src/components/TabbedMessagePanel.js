@@ -7,6 +7,7 @@ const TabbedMessagePanel = ({
   setActiveSimId,
   unreadCounts,
   setUnreadCounts,
+  dispatch,
   onCloseTab,
   replaySimulation,
 }) => {
@@ -16,12 +17,10 @@ const TabbedMessagePanel = ({
   useEffect(() => {
     if (activeTab) {
       setActiveSimId(activeTab);
-      setUnreadCounts((prev) => ({
-        ...prev,
-        [activeTab]: 0,
-      }));
+      dispatch({ type: 'CLEAR_UNREAD', simId: activeTab });
     }
-  }, [activeTab, setActiveSimId, setUnreadCounts]);
+  }, [activeTab, dispatch, setActiveSimId]);
+  
 
   useEffect(() => {
     if (!activeTab && simulationIds.length > 0) {
