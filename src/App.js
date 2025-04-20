@@ -7,25 +7,22 @@ import GraphMetrics from './components/GraphMetrics';
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
+import defaultTopology from './constants/defaultTopology';
+
 
 const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
 function App() {
   const [nodesState, setNodesState] = useState([]);
   const [edgesState, setEdgesState] = useState([]);
-  const [graph, setGraph] = useState({
-    '192.168.1.1': { '192.168.1.2': 1, '192.168.1.3': 4 },
-    '192.168.1.2': { '192.168.1.3': 2, '192.168.1.4': 5 },
-    '192.168.1.3': { '192.168.1.4': 1 },
-    '192.168.1.4': {},
-  });
-
   const [sourceNode, setSourceNode] = useState('');
   const [destinationNode, setDestinationNode] = useState('');
   const [loadingState, setLoadingState] = useState(true);
   const [pathsInFlight, setPathsInFlight] = useState([]);
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
+  const [graph, setGraph] = useState(defaultTopology);
+
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
