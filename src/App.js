@@ -94,9 +94,9 @@ function App() {
             <NetworkVisualization
               nodes={nodesState}
               edges={edgesState}
-              animatePath={Object.values(paths)}
-              nodeLabels={defaultLabels}
-              nodeTypes={defaultLabels}
+              animatePath={paths[activeSimId] || []}
+              nodeLabels={defaultLabels}   
+              nodeTypes={defaultLabels}    
             />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>

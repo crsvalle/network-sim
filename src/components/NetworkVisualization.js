@@ -1,43 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({
-  nodes,
-  edges,
-  animatePath = [],
-  nodeLabels = {},
-  nodeTypes = {},
-  filterPathByType = null,
-}) => {
+const NetworkVisualization = ({ nodes, edges,  nodeLabels = {},animatePath = [] }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || !nodes.length) return;
 
-    const typeColors = {
-      router: '#f44336',
-      switch: '#2196f3',
-      host: '#4caf50',
-      printer: '#9c27b0',
-      unknown: '#9e9e9e',
-    };
-
-    const styledNodes = nodes.map((n) => {
-      const type = nodeTypes[n.id] || 'unknown';
-      const label = nodeLabels[n.id] || n.id;
-
+    const labeledNodes = nodes.map((node) => {
+      const labelType = nodeLabels[node.id] || '';
+      const labelSuffix = labelType ? ` (${labelType})` : '';
       return {
-        ...n,
-        label,
-        color: {
-          background: typeColors[type],
-          border: '#333',
-        },
+        ...node,
+        label: `${node.id}${labelSuffix}`,
       };
     });
 
-    const data = { nodes: styledNodes, edges };
+    const data = { nodes: labeledNodes, edges };
     const animationIntervals = [];
 
     const options = {
@@ -63,12 +43,9 @@ const NetworkVisualization = ({
     networkRef.current = new Network(containerRef.current, data, options);
 
     const originalSizes = {};
-    const filteredPath = filterPathByType
-      ? animatePath.filter((nodeId) => nodeTypes[nodeId] === filterPathByType)
-      : animatePath;
 
-    if (filteredPath.length > 0) {
-      filteredPath.forEach((nodeId, index) => {
+    if (animatePath.length > 0) {
+      animatePath.forEach((nodeId, index) => {
         const timeoutId = setTimeout(() => {
           let pulseCount = 0;
           const maxPulse = 3;
@@ -107,7 +84,7 @@ const NetworkVisualization = ({
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath, nodeLabels, nodeTypes, filterPathByType]);
+  }, [nodes, edges, animatePath]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
