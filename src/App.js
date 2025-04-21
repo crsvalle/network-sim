@@ -7,8 +7,7 @@ import GraphMetrics from './components/GraphMetrics';
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
-import defaultTopology from './constants/defaultTopology';
-
+import { defaultTopology, defaultLabels } from './constants/defaultTopology';
 
 const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
@@ -22,7 +21,6 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
-
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -93,7 +91,13 @@ function App() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '30px' }}>
           <div style={{ flex: 1 }}>
-            <NetworkVisualization nodes={nodesState} edges={edgesState} animatePath={Object.values(paths)} />
+            <NetworkVisualization
+              nodes={nodesState}
+              edges={edgesState}
+              animatePath={Object.values(paths)}
+              nodeLabels={defaultLabels}
+              nodeTypes={defaultLabels}
+            />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
                 🕒 Step {replayState.index + 1} / {nodeSnapshots[replayState.simId]?.length || 0}
