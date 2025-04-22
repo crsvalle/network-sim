@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges,  nodeLabels = {},animatePath = [] }) => {
+const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
@@ -84,7 +84,7 @@ const NetworkVisualization = ({ nodes, edges,  nodeLabels = {},animatePath = [] 
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath]);
+  }, [nodes, edges, animatePath, nodeLabels]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
