@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
 const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] }) => {
@@ -7,6 +7,8 @@ const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] 
 
   useEffect(() => {
     if (!containerRef.current || !nodes.length) return;
+
+    console.log('Received animatePath:', animatePath); // Debugging
 
     const labeledNodes = nodes.map((node) => {
       const labelType = nodeLabels[node.id] || '';
@@ -17,7 +19,15 @@ const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] 
       };
     });
 
-    const data = { nodes: labeledNodes, edges };
+    const labeledEdges = edges.map((edge) => ({
+      ...edge,
+      id: `${edge.from}-${edge.to}`,
+      label: String(edge.label || ''), // Show weights
+      font: { align: 'top' },
+      color: { color: '#848484' }, // Default edge color
+    }));
+
+    const data = { nodes: labeledNodes, edges: labeledEdges };
     const animationIntervals = [];
 
     const options = {
@@ -43,10 +53,35 @@ const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] 
     networkRef.current = new Network(containerRef.current, data, options);
 
     const originalSizes = {};
+    const originalEdgeColors = {};
 
-    if (animatePath.length > 0) {
-      animatePath.forEach((nodeId, index) => {
+
+    const pathToAnimate = animatePath.length > 0
+      ? animatePath
+      : ["10.0.0.1", "10.0.1.1", "10.0.1.2"]; // Test path
+
+    if (pathToAnimate.length > 0) {
+      pathToAnimate.forEach((nodeId, index) => {
         const timeoutId = setTimeout(() => {
+          const nextNodeId = pathToAnimate[index + 1];
+
+          // Highlight edge between current and next node
+          if (nodeId && nextNodeId) {
+            const edgeId = `${nodeId}-${nextNodeId}`;
+            const edge = networkRef.current.body.edges[edgeId];
+            if (edge && !originalEdgeColors[edgeId]) {
+              originalEdgeColors[edgeId] = edge.options.color.color;
+            }
+
+            if (edge) {
+              networkRef.current.body.data.edges.update({
+                id: edgeId,
+                color: { color: '#4caf50' }, // Green highlight
+              });
+            }
+          }
+
+          // Pulse node
           let pulseCount = 0;
           const maxPulse = 3;
           const intervalId = setInterval(() => {
@@ -69,6 +104,16 @@ const NetworkVisualization = ({ nodes, edges, nodeLabels = {}, animatePath = [] 
               if (networkRef.current?.body?.nodes[nodeId]) {
                 networkRef.current.body.nodes[nodeId].options.size = originalSizes[nodeId] || 20;
                 networkRef.current.redraw();
+              }
+
+              // Reset edge color after pulse
+              if (nodeId && nextNodeId) {
+                const edgeId = `${nodeId}-${nextNodeId}`;
+                const originalColor = originalEdgeColors[edgeId] || '#848484';
+                networkRef.current.body.data.edges.update({
+                  id: edgeId,
+                  color: { color: originalColor },
+                });
               }
             }
           }, 100);
