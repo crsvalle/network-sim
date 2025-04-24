@@ -8,8 +8,7 @@ import SwitchMemoryPanel from './components/SwitchMemoryPanel'; // 🧠 New Pane
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
-import defaultTopology from './constants/defaultTopology';
-import { defaultLabels } from './constants/defaultTopology'; // 🏷️ For node labels
+import { defaultTopology, defaultLabels } from './constants/defaultTopology';
 
 const COLORS = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0'];
 
