@@ -4,6 +4,7 @@ import TopologyEditor from './components/TopologyEditor';
 import NodeSelector from './components/NodeSelector';
 import TabbedMessagePanel from './components/TabbedMessagePanel';
 import GraphMetrics from './components/GraphMetrics';
+import SwitchMemoryPanel from './components/SwitchMemoryPanel'; // 🧠 New Panel
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
@@ -33,6 +34,7 @@ function App() {
     metricsBySim,
     unreadCounts,
     nodeSnapshots,
+    switchMemory, // 🧠 Switch learning state
     dispatch,
   } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading);
 
@@ -94,9 +96,8 @@ function App() {
             <NetworkVisualization
               nodes={nodesState}
               edges={edgesState}
-              animatePath={paths[activeSimId] || []}
-              nodeLabels={defaultLabels}   
-              nodeTypes={defaultLabels}    
+              animatePath={Object.values(paths)}
+              nodeLabels={defaultLabels} // 🏷️ Add labels here
             />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -116,6 +117,7 @@ function App() {
               replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
+            <SwitchMemoryPanel switchMemory={switchMemory} /> {/* 🧠 Show learned paths */}
           </div>
         </div>
       )}
