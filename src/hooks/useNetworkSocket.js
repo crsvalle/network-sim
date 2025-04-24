@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import io from 'socket.io-client';
 import { simulationReducer, initialState } from './simulationReducer';
 
@@ -6,7 +6,9 @@ const socket = io('http://localhost:8000');
 
 export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading) {
   const [state, dispatch] = useReducer(simulationReducer, initialState);
+  const [switchMemory, setSwitchMemory] = useState({}); // 🧠 Add switch memory state
 
+  // Handle network updates
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
       if (!simulationId) return;
@@ -60,6 +62,20 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     };
   }, [activeSimId, setNodes, setEdges, setLoading]);
 
+  // 🧠 Handle switch learning updates
+  useEffect(() => {
+    socket.on('switchLearningUpdate', ({ switchId, learnedTable }) => {
+      setSwitchMemory((prev) => ({
+        ...prev,
+        [switchId]: learnedTable,
+      }));
+    });
+
+    return () => {
+      socket.off('switchLearningUpdate');
+    };
+  }, []);
+
   return {
     socket,
     logs: state.logs,
@@ -67,6 +83,7 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     metricsBySim: state.metricsBySim,
     unreadCounts: state.unreadCounts,
     nodeSnapshots: state.nodeSnapshots,
+    switchMemory,
     dispatch,
   };
 }
