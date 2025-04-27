@@ -4,7 +4,7 @@ import TopologyEditor from './components/TopologyEditor';
 import NodeSelector from './components/NodeSelector';
 import TabbedMessagePanel from './components/TabbedMessagePanel';
 import GraphMetrics from './components/GraphMetrics';
-import SwitchMemoryPanel from './components/SwitchMemoryPanel'; // 🧠 New Panel
+import SwitchMemoryPanel from './components/SwitchMemoryPanel';
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
@@ -22,6 +22,7 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
+  const [switchMemory, setSwitchMemory] = useState({});
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -34,9 +35,8 @@ function App() {
     metricsBySim,
     unreadCounts,
     nodeSnapshots,
-    switchMemory, // 🧠 Switch learning state
     dispatch,
-  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading);
+  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
 
   const sendMessage = useSendMessage({
     socket,
@@ -97,7 +97,7 @@ function App() {
               nodes={nodesState}
               edges={edgesState}
               animatePath={Object.values(paths)}
-              nodeLabels={defaultLabels} // 🏷️ Add labels here
+              nodeLabels={defaultLabels}
             />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -117,7 +117,7 @@ function App() {
               replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
-            <SwitchMemoryPanel switchMemory={switchMemory} /> {/* 🧠 Show learned paths */}
+            <SwitchMemoryPanel switchMemory={switchMemory} />
           </div>
         </div>
       )}
