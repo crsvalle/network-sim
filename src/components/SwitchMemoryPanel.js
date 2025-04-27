@@ -1,24 +1,23 @@
 const SwitchMemoryPanel = ({ switchMemory }) => (
-    <div style={{ marginTop: '20px', background: '#f1f1f1', padding: '10px', borderRadius: '6px' }}>
-      <h3>🧠 Switch Memory</h3>
-      {Object.keys(switchMemory).length === 0 ? (
-        <p>No learned paths yet.</p>
-      ) : (
-        Object.entries(switchMemory).map(([switchId, table]) => (
-          <div key={switchId} style={{ marginBottom: '10px' }}>
-            <strong>Switch {switchId}</strong>
-            <ul>
-              {Object.entries(table).map(([dest, port]) => (
-                <li key={dest}>
-                  {dest} → {port}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      )}
-    </div>
-  );
-  
-  export default SwitchMemoryPanel;
-  
+  <div style={{ background: '#f1f1f1', padding: '10px', borderRadius: '8px', marginTop: '20px' }}>
+    <h2>🧠 Switch Memory</h2>
+    {Object.keys(switchMemory).length === 0 ? (
+      <p>No switch learning data yet.</p>
+    ) : (
+      Object.entries(switchMemory).map(([switchId, table]) => (
+        <div key={switchId} style={{ marginBottom: '12px' }}>
+          <strong>🔀 Switch {switchId}</strong>
+          <ul style={{ marginLeft: '20px' }}>
+            {Object.entries(table).map(([destination, learnedFrom]) => (
+              <li key={destination}>
+                📍 {destination} ➡ learned via <strong>{learnedFrom}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    )}
+  </div>
+);
+
+export default SwitchMemoryPanel;

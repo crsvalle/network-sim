@@ -1,14 +1,12 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import io from 'socket.io-client';
 import { simulationReducer, initialState } from './simulationReducer';
 
 const socket = io('http://localhost:8000');
 
-export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading) {
+export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory) {
   const [state, dispatch] = useReducer(simulationReducer, initialState);
-  const [switchMemory, setSwitchMemory] = useState({}); // 🧠 Add switch memory state
 
-  // Handle network updates
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
       if (!simulationId) return;
@@ -51,19 +49,7 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       dispatch({ type: 'ADD_SNAPSHOT', simId: simulationId, snapshot: safeNodes });
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('Connection Error:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      socket.off('networkUpdate');
-      socket.off('connect_error');
-    };
-  }, [activeSimId, setNodes, setEdges, setLoading]);
-
-  // 🧠 Handle switch learning updates
-  useEffect(() => {
+    // Switch learning update
     socket.on('switchLearningUpdate', ({ switchId, learnedTable }) => {
       setSwitchMemory((prev) => ({
         ...prev,
@@ -71,10 +57,17 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       }));
     });
 
+    socket.on('connect_error', (error) => {
+      console.error('Connection Error:', error);
+      setLoading(false);
+    });
+
     return () => {
+      socket.off('networkUpdate');
       socket.off('switchLearningUpdate');
+      socket.off('connect_error');
     };
-  }, []);
+  }, [activeSimId, setNodes, setEdges, setLoading, setSwitchMemory]);
 
   return {
     socket,
@@ -83,7 +76,6 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     metricsBySim: state.metricsBySim,
     unreadCounts: state.unreadCounts,
     nodeSnapshots: state.nodeSnapshots,
-    switchMemory,
     dispatch,
   };
 }
