@@ -22,7 +22,7 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
-  const [switchMemory, setSwitchMemory] = useState({});
+  const [switchMemory, setSwitchMemory] = useState({});  // Switch learning table
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -36,7 +36,7 @@ function App() {
     unreadCounts,
     nodeSnapshots,
     dispatch,
-  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
+  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);  // Pass switch memory handler
 
   const sendMessage = useSendMessage({
     socket,
@@ -117,7 +117,7 @@ function App() {
               replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
-            <SwitchMemoryPanel switchMemory={switchMemory} />
+            <SwitchMemoryPanel switchMemory={switchMemory} />  {/* Switch Memory Display */}
           </div>
         </div>
       )}
