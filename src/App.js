@@ -23,8 +23,7 @@ function App() {
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
   const [switchMemory, setSwitchMemory] = useState({});
-  const [disabledLinks, setDisabledLinks] = useState([]);
-
+  const [disabledLinks, setDisabledLinks] = useState([]); // For link failure
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -38,7 +37,7 @@ function App() {
     unreadCounts,
     nodeSnapshots,
     dispatch,
-  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);  // Pass switch memory handler
+  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
 
   const sendMessage = useSendMessage({
     socket,
@@ -49,6 +48,7 @@ function App() {
     setPathsInFlight,
     setPacketColors,
     COLORS,
+    disabledLinks, // Account for failed links
   });
 
   const { replayState, replaySimulation } = useReplaySimulation(nodeSnapshots, setNodes);
@@ -80,6 +80,7 @@ function App() {
         disabledLinks={disabledLinks}
         setDisabledLinks={setDisabledLinks}
       />
+
       <NodeSelector
         graph={graph}
         sourceNode={sourceNode}
@@ -104,6 +105,8 @@ function App() {
               edges={edgesState}
               animatePath={Object.values(paths)}
               nodeLabels={defaultLabels}
+              disabledLinks={disabledLinks}
+              setDisabledLinks={setDisabledLinks}
             />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -123,7 +126,7 @@ function App() {
               replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
-            <SwitchMemoryPanel switchMemory={switchMemory} />  {/* Switch Memory Display */}
+            <SwitchMemoryPanel switchMemory={switchMemory} />
           </div>
         </div>
       )}

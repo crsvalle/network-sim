@@ -1,30 +1,34 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges, animatePath = [], disabledLinks = [] }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {}, disabledLinks = [], setDisabledLinks }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || !nodes.length) return;
 
-    const animationIntervals = [];
-
-    const styledEdges = edges.map((edge) => {
-      const isDisabled = disabledLinks.some(
-        (link) => link.from === edge.from && link.to === edge.to
-      );
-
+    const labeledNodes = nodes.map((node) => {
+      const labelType = nodeLabels[node.id] || '';
+      const labelSuffix = labelType ? ` (${labelType})` : '';
       return {
-        ...edge,
-        color: {
-          color: isDisabled ? '#bdbdbd' : edge.color?.color || '#848484',
-        },
-        dashes: isDisabled ? true : false,
+        ...node,
+        label: `${node.id}${labelSuffix}`,
       };
     });
 
-    const data = { nodes, edges: styledEdges };
+    const styledEdges = edges.map(edge => ({
+      ...edge,
+      id: `${edge.from}-${edge.to}`, // for click identification
+      color: {
+        color: disabledLinks.some(l => l.from === edge.from && l.to === edge.to)
+          ? '#f44336' // red for failed link
+          : '#848484',
+      },
+    }));
+
+    const data = { nodes: labeledNodes, edges: styledEdges };
+    const animationIntervals = [];
 
     const options = {
       nodes: {
@@ -38,7 +42,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], disabledLinks = 
         color: { highlight: '#ff9800' },
       },
       physics: {
-        enabled: false, // Keep layout stable
+        enabled: false,
       },
     };
 
@@ -48,7 +52,28 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], disabledLinks = 
 
     networkRef.current = new Network(containerRef.current, data, options);
 
+    // Handle edge click for toggling link failure
+    networkRef.current.on('click', (params) => {
+      if (!params.edges.length) return;
+      const edgeId = params.edges[0];
+      const clickedEdge = edges.find(e => `${e.from}-${e.to}` === edgeId);
+
+      if (clickedEdge) {
+        setDisabledLinks((prev) => {
+          const exists = prev.find(link => link.from === clickedEdge.from && link.to === clickedEdge.to);
+          if (exists) {
+            // Recover
+            return prev.filter(link => !(link.from === clickedEdge.from && link.to === clickedEdge.to));
+          } else {
+            // Fail
+            return [...prev, { from: clickedEdge.from, to: clickedEdge.to }];
+          }
+        });
+      }
+    });
+
     const originalSizes = {};
+
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
         const timeoutId = setTimeout(() => {
@@ -89,7 +114,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], disabledLinks = 
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath, disabledLinks]);
+  }, [nodes, edges, animatePath, nodeLabels, disabledLinks, setDisabledLinks]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
