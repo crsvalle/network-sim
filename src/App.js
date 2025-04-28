@@ -22,7 +22,9 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
-  const [switchMemory, setSwitchMemory] = useState({});  // Switch learning table
+  const [switchMemory, setSwitchMemory] = useState({});
+  const [disabledLinks, setDisabledLinks] = useState([]);
+
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -72,8 +74,12 @@ function App() {
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <h1 style={{ textAlign: 'center' }}>📡 Network Simulation</h1>
 
-      <TopologyEditor graph={graph} setGraph={setGraph} />
-
+      <TopologyEditor
+        graph={graph}
+        setGraph={setGraph}
+        disabledLinks={disabledLinks}
+        setDisabledLinks={setDisabledLinks}
+      />
       <NodeSelector
         graph={graph}
         sourceNode={sourceNode}
