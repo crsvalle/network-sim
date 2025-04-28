@@ -1,24 +1,30 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [], disabledLinks = [] }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || !nodes.length) return;
 
-    const labeledNodes = nodes.map((node) => {
-      const labelType = nodeLabels[node.id] || '';
-      const labelSuffix = labelType ? ` (${labelType})` : '';
+    const animationIntervals = [];
+
+    const styledEdges = edges.map((edge) => {
+      const isDisabled = disabledLinks.some(
+        (link) => link.from === edge.from && link.to === edge.to
+      );
+
       return {
-        ...node,
-        label: `${node.id}${labelSuffix}`,
+        ...edge,
+        color: {
+          color: isDisabled ? '#bdbdbd' : edge.color?.color || '#848484',
+        },
+        dashes: isDisabled ? true : false,
       };
     });
 
-    const data = { nodes: labeledNodes, edges };
-    const animationIntervals = [];
+    const data = { nodes, edges: styledEdges };
 
     const options = {
       nodes: {
@@ -32,7 +38,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
         color: { highlight: '#ff9800' },
       },
       physics: {
-        enabled: false,  // prevents the layout from changing dynamically
+        enabled: false, // Keep layout stable
       },
     };
 
@@ -43,7 +49,6 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
     networkRef.current = new Network(containerRef.current, data, options);
 
     const originalSizes = {};
-
     if (animatePath.length > 0) {
       animatePath.forEach((nodeId, index) => {
         const timeoutId = setTimeout(() => {
@@ -84,7 +89,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath, nodeLabels]);
+  }, [nodes, edges, animatePath, disabledLinks]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
