@@ -22,7 +22,8 @@ function App() {
   const [packetColors, setPacketColors] = useState({});
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
-  const [switchMemory, setSwitchMemory] = useState({});  // Switch learning table
+  const [switchMemory, setSwitchMemory] = useState({});
+  const [disabledLinks, setDisabledLinks] = useState([]); // For link failure
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -36,7 +37,7 @@ function App() {
     unreadCounts,
     nodeSnapshots,
     dispatch,
-  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);  // Pass switch memory handler
+  } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
 
   const sendMessage = useSendMessage({
     socket,
@@ -47,6 +48,7 @@ function App() {
     setPathsInFlight,
     setPacketColors,
     COLORS,
+    disabledLinks, // Account for failed links
   });
 
   const { replayState, replaySimulation } = useReplaySimulation(nodeSnapshots, setNodes);
@@ -72,7 +74,12 @@ function App() {
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <h1 style={{ textAlign: 'center' }}>📡 Network Simulation</h1>
 
-      <TopologyEditor graph={graph} setGraph={setGraph} />
+      <TopologyEditor
+        graph={graph}
+        setGraph={setGraph}
+        disabledLinks={disabledLinks}
+        setDisabledLinks={setDisabledLinks}
+      />
 
       <NodeSelector
         graph={graph}
@@ -98,6 +105,8 @@ function App() {
               edges={edgesState}
               animatePath={Object.values(paths)}
               nodeLabels={defaultLabels}
+              disabledLinks={disabledLinks}
+              setDisabledLinks={setDisabledLinks}
             />
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -117,7 +126,7 @@ function App() {
               replaySimulation={replaySimulation}
             />
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
-            <SwitchMemoryPanel switchMemory={switchMemory} />  {/* Switch Memory Display */}
+            <SwitchMemoryPanel switchMemory={switchMemory} />
           </div>
         </div>
       )}

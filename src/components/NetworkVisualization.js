@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {}, disabledLinks = [], setDisabledLinks }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
@@ -17,7 +17,17 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
       };
     });
 
-    const data = { nodes: labeledNodes, edges };
+    const styledEdges = edges.map(edge => ({
+      ...edge,
+      id: `${edge.from}-${edge.to}`, // for click identification
+      color: {
+        color: disabledLinks.some(l => l.from === edge.from && l.to === edge.to)
+          ? '#f44336' // red for failed link
+          : '#848484',
+      },
+    }));
+
+    const data = { nodes: labeledNodes, edges: styledEdges };
     const animationIntervals = [];
 
     const options = {
@@ -32,7 +42,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
         color: { highlight: '#ff9800' },
       },
       physics: {
-        enabled: false,  // prevents the layout from changing dynamically
+        enabled: false,
       },
     };
 
@@ -41,6 +51,26 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
     }
 
     networkRef.current = new Network(containerRef.current, data, options);
+
+    // Handle edge click for toggling link failure
+    networkRef.current.on('click', (params) => {
+      if (!params.edges.length) return;
+      const edgeId = params.edges[0];
+      const clickedEdge = edges.find(e => `${e.from}-${e.to}` === edgeId);
+
+      if (clickedEdge) {
+        setDisabledLinks((prev) => {
+          const exists = prev.find(link => link.from === clickedEdge.from && link.to === clickedEdge.to);
+          if (exists) {
+            // Recover
+            return prev.filter(link => !(link.from === clickedEdge.from && link.to === clickedEdge.to));
+          } else {
+            // Fail
+            return [...prev, { from: clickedEdge.from, to: clickedEdge.to }];
+          }
+        });
+      }
+    });
 
     const originalSizes = {};
 
@@ -84,7 +114,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} 
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath, nodeLabels]);
+  }, [nodes, edges, animatePath, nodeLabels, disabledLinks, setDisabledLinks]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TopologyEditor = ({ graph, setGraph }) => {
+const TopologyEditor = ({ graph, setGraph, disabledLinks, setDisabledLinks }) => {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [weight, setWeight] = useState(1);
@@ -66,6 +66,25 @@ const TopologyEditor = ({ graph, setGraph }) => {
     console.log(`❌ Removed link: ${from} → ${to}`);
   };
 
+  const toggleLinkStatus = () => {
+    if (!from || !to) {
+      alert('Select valid from/to nodes.');
+      return;
+    }
+
+    const existsDisabled = disabledLinks.find(
+      (link) => link.from === from && link.to === to
+    );
+
+    if (existsDisabled) {
+      setDisabledLinks(disabledLinks.filter((link) => !(link.from === from && link.to === to)));
+      console.log(`✅ Link re-enabled: ${from} → ${to}`);
+    } else {
+      setDisabledLinks([...disabledLinks, { from, to }]);
+      console.log(`❌ Link disabled: ${from} → ${to}`);
+    }
+  };
+
   const nodeOptions = Object.keys(graph);
 
   return (
@@ -103,6 +122,11 @@ const TopologyEditor = ({ graph, setGraph }) => {
         <button onClick={addLink} style={{ marginLeft: '10px' }}>➕ Add Link</button>
         <button onClick={removeLink} style={{ marginLeft: '10px' }}>❌ Remove Link</button>
         <button onClick={removeNode} style={{ marginLeft: '10px' }}>🗑️ Remove Node</button>
+        <button onClick={toggleLinkStatus} style={{ marginLeft: '10px' }}>
+          {disabledLinks.find((link) => link.from === from && link.to === to)
+            ? '✅ Enable Link'
+            : '❌ Disable Link'}
+        </button>
       </div>
     </div>
   );
