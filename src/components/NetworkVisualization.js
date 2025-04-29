@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network/peer';
 
-const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {}, disabledLinks = [], setDisabledLinks }) => {
+const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {} }) => {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
@@ -17,17 +17,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
       };
     });
 
-    const styledEdges = edges.map(edge => ({
-      ...edge,
-      id: `${edge.from}-${edge.to}`, // for click identification
-      color: {
-        color: disabledLinks.some(l => l.from === edge.from && l.to === edge.to)
-          ? '#f44336' // red for failed link
-          : '#848484',
-      },
-    }));
-
-    const data = { nodes: labeledNodes, edges: styledEdges };
+    const data = { nodes: labeledNodes, edges };
     const animationIntervals = [];
 
     const options = {
@@ -42,7 +32,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
         color: { highlight: '#ff9800' },
       },
       physics: {
-        enabled: false,
+        enabled: false, 
       },
     };
 
@@ -52,26 +42,6 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
 
     networkRef.current = new Network(containerRef.current, data, options);
 
-    // Handle edge click for toggling link failure
-    networkRef.current.on('click', (params) => {
-      if (!params.edges.length) return;
-      const edgeId = params.edges[0];
-      const clickedEdge = edges.find(e => `${e.from}-${e.to}` === edgeId);
-
-      if (clickedEdge) {
-        setDisabledLinks((prev) => {
-          const exists = prev.find(link => link.from === clickedEdge.from && link.to === clickedEdge.to);
-          if (exists) {
-            // Recover
-            return prev.filter(link => !(link.from === clickedEdge.from && link.to === clickedEdge.to));
-          } else {
-            // Fail
-            return [...prev, { from: clickedEdge.from, to: clickedEdge.to }];
-          }
-        });
-      }
-    });
-
     const originalSizes = {};
 
     if (animatePath.length > 0) {
@@ -79,6 +49,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
         const timeoutId = setTimeout(() => {
           let pulseCount = 0;
           const maxPulse = 3;
+          let isRetry = false;
           const intervalId = setInterval(() => {
             const size = 20 + Math.sin(pulseCount * 0.5) * 10;
 
@@ -89,7 +60,18 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
                 originalSizes[nodeId] = node.options.size;
               }
 
+              const isDropped = node.options.color?.background === '#9e9e9e';
+
               node.options.size = size;
+              node.options.color = {
+                background: isDropped
+                  ? '#9e9e9e' // dropped grey
+                  : isRetry
+                  ? '#ffc107' // amber for retry
+                  : '#4caf50', // green for normal
+                border: '#333',
+              };
+
               networkRef.current.redraw();
             }
 
@@ -97,7 +79,12 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
             if (pulseCount >= maxPulse * Math.PI) {
               clearInterval(intervalId);
               if (networkRef.current?.body?.nodes[nodeId]) {
-                networkRef.current.body.nodes[nodeId].options.size = originalSizes[nodeId] || 20;
+                const node = networkRef.current.body.nodes[nodeId];
+                node.options.size = originalSizes[nodeId] || 20;
+                node.options.color = {
+                  background: '#97C2FC',
+                  border: '#333',
+                };
                 networkRef.current.redraw();
               }
             }
@@ -114,7 +101,7 @@ const NetworkVisualization = ({ nodes, edges, animatePath = [], nodeLabels = {},
       animationIntervals.forEach(clearTimeout);
       animationIntervals.forEach(clearInterval);
     };
-  }, [nodes, edges, animatePath, nodeLabels, disabledLinks, setDisabledLinks]);
+  }, [nodes, edges, animatePath, nodeLabels]);
 
   return <div ref={containerRef} style={{ height: '500px', backgroundColor: '#fff' }} />;
 };
