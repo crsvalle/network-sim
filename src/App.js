@@ -37,8 +37,10 @@ function App() {
     unreadCounts,
     nodeSnapshots,
     dispatch,
+    linkUsage,
   } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
-
+  
+  
   const sendMessage = useSendMessage({
     socket,
     graph,
@@ -105,9 +107,9 @@ function App() {
               edges={edgesState}
               animatePath={Object.values(paths)}
               nodeLabels={defaultLabels}
-              disabledLinks={disabledLinks}
-              setDisabledLinks={setDisabledLinks}
+              linkUsage={linkUsage}
             />
+
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
                 🕒 Step {replayState.index + 1} / {nodeSnapshots[replayState.simId]?.length || 0}
