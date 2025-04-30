@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import io from 'socket.io-client';
 import { simulationReducer, initialState } from './simulationReducer';
 
@@ -6,15 +6,14 @@ const socket = io('http://localhost:8000');
 
 export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory) {
   const [state, dispatch] = useReducer(simulationReducer, initialState);
+  const [linkUsage, setLinkUsage] = useState({});
 
   useEffect(() => {
     socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
       if (!simulationId) return;
 
       const tag = colorId != null ? `[${colorId}] ` : '';
-      const fullMessage = tag + message;
-
-      dispatch({ type: 'ADD_LOG', simId: simulationId, message: fullMessage });
+      dispatch({ type: 'ADD_LOG', simId: simulationId, message: tag + message });
 
       if (simulationId !== activeSimId) {
         dispatch({ type: 'INCREMENT_UNREAD', simId: simulationId });
@@ -31,30 +30,28 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       setEdges(safeEdges);
       setLoading(false);
 
-      const retries = message?.includes('(retry') ? 1 : 0;
-      const drops = message?.includes('❌') ? 1 : 0;
+      dispatch({
+        type: 'ADD_METRICS',
+        simId: simulationId,
+        metrics: {
+          pathLength: path?.length || 0,
+          totalCost: safeEdges.reduce((sum, e) => sum + parseInt(e.label || 0), 0),
+          retries: (state.metricsBySim[simulationId]?.retries || 0) + (message.includes('(retry') ? 1 : 0),
+          drops: (state.metricsBySim[simulationId]?.drops || 0) + (message.includes('❌') ? 1 : 0),
+          nodeCount: safeNodes.length,
+          linkCount: safeEdges.length,
+        },
+      });
 
-      const metrics = {
-        pathLength: safeNodes.filter(n => n.color === '#4caf50' || n.color === '#f44336').length,
-        totalCost: safeEdges
-          .filter(e => e.color?.color === '#4caf50')
-          .reduce((sum, e) => sum + parseInt(e.label), 0),
-        retries,
-        drops,
-        nodeCount: safeNodes.length,
-        linkCount: safeEdges.length,
-      };
-
-      dispatch({ type: 'ADD_METRICS', simId: simulationId, metrics });
       dispatch({ type: 'ADD_SNAPSHOT', simId: simulationId, snapshot: safeNodes });
     });
 
-    // Switch learning update
     socket.on('switchLearningUpdate', ({ switchId, learnedTable }) => {
-      setSwitchMemory((prev) => ({
-        ...prev,
-        [switchId]: learnedTable,
-      }));
+      setSwitchMemory(prev => ({ ...prev, [switchId]: learnedTable }));
+    });
+
+    socket.on('linkUtilizationUpdate', (usageMap) => {
+      setLinkUsage(usageMap);
     });
 
     socket.on('connect_error', (error) => {
@@ -65,9 +62,10 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     return () => {
       socket.off('networkUpdate');
       socket.off('switchLearningUpdate');
+      socket.off('linkUtilizationUpdate');
       socket.off('connect_error');
     };
-  }, [activeSimId, setNodes, setEdges, setLoading, setSwitchMemory]);
+  }, [activeSimId, setNodes, setEdges, setLoading]);
 
   return {
     socket,
@@ -77,5 +75,6 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     unreadCounts: state.unreadCounts,
     nodeSnapshots: state.nodeSnapshots,
     dispatch,
+    linkUsage,
   };
 }
