@@ -65,7 +65,7 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       socket.off('linkUtilizationUpdate');
       socket.off('connect_error');
     };
-  }, [activeSimId, setNodes, setEdges, setLoading]);
+  },[activeSimId, setNodes, setEdges, setLoading, setSwitchMemory, state.metricsBySim]);
 
   return {
     socket,
