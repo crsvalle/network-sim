@@ -5,6 +5,7 @@ import NodeSelector from './components/NodeSelector';
 import TabbedMessagePanel from './components/TabbedMessagePanel';
 import GraphMetrics from './components/GraphMetrics';
 import SwitchMemoryPanel from './components/SwitchMemoryPanel';
+import ControlPanel from './components/ControlPanel';
 import useNetworkSocket from './hooks/useNetworkSocket';
 import useSendMessage from './hooks/useSendMessage';
 import useReplaySimulation from './hooks/useReplaySimulation';
@@ -23,7 +24,8 @@ function App() {
   const [activeSimId, setActiveSimId] = useState(null);
   const [graph, setGraph] = useState(defaultTopology);
   const [switchMemory, setSwitchMemory] = useState({});
-  const [disabledLinks, setDisabledLinks] = useState([]); // For link failure
+  const [disabledLinks, setDisabledLinks] = useState([]);
+  const [algorithm, setAlgorithm] = useState('dijkstra');
 
   const setNodes = useCallback((nodes) => setNodesState(nodes), []);
   const setEdges = useCallback((edges) => setEdgesState(edges), []);
@@ -39,8 +41,7 @@ function App() {
     dispatch,
     linkUsage,
   } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
-  
-  
+
   const sendMessage = useSendMessage({
     socket,
     graph,
@@ -50,7 +51,8 @@ function App() {
     setPathsInFlight,
     setPacketColors,
     COLORS,
-    disabledLinks, // Account for failed links
+    disabledLinks,
+    algorithm,
   });
 
   const { replayState, replaySimulation } = useReplaySimulation(nodeSnapshots, setNodes);
@@ -91,11 +93,12 @@ function App() {
         setDestinationNode={setDestinationNode}
       />
 
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={sendMessage} disabled={pathsInFlight.length >= 2}>
-          {pathsInFlight.length >= 2 ? '⏳ Sending...' : '📤 Send Message'}
-        </button>
-      </div>
+      <ControlPanel
+        sendMessage={sendMessage}
+        pathsInFlight={pathsInFlight}
+        algorithm={algorithm}
+        setAlgorithm={setAlgorithm}
+      />
 
       {loadingState ? (
         <p>Loading...</p>
@@ -109,7 +112,6 @@ function App() {
               nodeLabels={defaultLabels}
               linkUsage={linkUsage}
             />
-
             {replayState.simId && (
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
                 🕒 Step {replayState.index + 1} / {nodeSnapshots[replayState.simId]?.length || 0}
