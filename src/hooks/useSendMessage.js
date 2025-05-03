@@ -8,6 +8,7 @@ export default function useSendMessage({
   setPacketColors,
   COLORS,
   disabledLinks,
+  algorithm,
 }) {
   const MAX_PARALLEL_MESSAGES = 2;
 
@@ -48,8 +49,10 @@ export default function useSendMessage({
     socket.emit('sendMessage', {
       from: sourceNode,
       to: destinationNode,
-      graph: adjustedGraph, 
+      graph: adjustedGraph,
       colorId: newId,
+      disabledLinks,
+      algorithm,
     });
 
     setTimeout(() => {
