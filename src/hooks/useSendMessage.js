@@ -53,6 +53,7 @@ export default function useSendMessage({
       colorId: newId,
       disabledLinks,
       algorithm,
+      retryCount: 0,
     });
 
     setTimeout(() => {
