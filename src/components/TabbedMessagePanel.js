@@ -20,7 +20,6 @@ const TabbedMessagePanel = ({
       dispatch({ type: 'CLEAR_UNREAD', simId: activeTab });
     }
   }, [activeTab, dispatch, setActiveSimId]);
-  
 
   useEffect(() => {
     if (!activeTab && simulationIds.length > 0) {
@@ -109,6 +108,18 @@ const TabbedMessagePanel = ({
           const colorId = match ? match[1] : null;
           const tagColor = colorId ? packetColors[colorId] : '#ccc';
 
+          // Retry indicators
+          let prefix = '';
+          let bgColor = '#f9f9f9';
+
+          if (msg.includes('retrying')) {
+            prefix = '🔁 ';
+            bgColor = '#fffbe6'; // light yellow
+          } else if (msg.includes('dropped permanently')) {
+            prefix = '❌ ';
+            bgColor = '#ffe6e6'; // light red
+          }
+
           return (
             <div
               key={i}
@@ -116,12 +127,12 @@ const TabbedMessagePanel = ({
                 padding: '10px',
                 marginBottom: '8px',
                 borderLeft: `6px solid ${tagColor}`,
-                backgroundColor: '#f9f9f9',
+                backgroundColor: bgColor,
                 borderRadius: '4px',
                 fontFamily: 'monospace',
               }}
             >
-              {msg}
+              {prefix}{msg}
             </div>
           );
         })}
