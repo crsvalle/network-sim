@@ -40,6 +40,7 @@ function App() {
     nodeSnapshots,
     dispatch,
     linkUsage,
+    summaries,
   } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
 
   const sendMessage = useSendMessage({
@@ -128,7 +129,9 @@ function App() {
               dispatch={dispatch}
               onCloseTab={onCloseTab}
               replaySimulation={replaySimulation}
+              summary={summaries[activeSimId]} 
             />
+
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
             <SwitchMemoryPanel switchMemory={switchMemory} />
           </div>
