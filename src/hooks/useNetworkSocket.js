@@ -6,6 +6,7 @@ const socket = io('http://localhost:8000');
 
 export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory) {
   const [state, dispatch] = useReducer(simulationReducer, initialState);
+  const [summaries, setSummaries] = useState({});
   const [linkUsage, setLinkUsage] = useState({});
 
   useEffect(() => {
@@ -65,7 +66,12 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
       socket.off('linkUtilizationUpdate');
       socket.off('connect_error');
     };
-  },[activeSimId, setNodes, setEdges, setLoading, setSwitchMemory, state.metricsBySim]);
+  }, [activeSimId, setNodes, setEdges, setLoading, setSwitchMemory, state.metricsBySim]);
+  useEffect(() => {
+    socket.on('simulationSummary', (data) => {
+      setSummaries((prev) => ({ ...prev, [data.simulationId]: data }));
+    });
+  }, [socket]);
 
   return {
     socket,
