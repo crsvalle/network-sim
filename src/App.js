@@ -128,7 +128,9 @@ function App() {
               dispatch={dispatch}
               onCloseTab={onCloseTab}
               replaySimulation={replaySimulation}
+              summary={summaries[activeSimId]} 
             />
+
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
             <SwitchMemoryPanel switchMemory={switchMemory} />
           </div>

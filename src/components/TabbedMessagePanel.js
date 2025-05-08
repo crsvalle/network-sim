@@ -10,6 +10,7 @@ const TabbedMessagePanel = ({
   dispatch,
   onCloseTab,
   replaySimulation,
+  summary
 }) => {
   const simulationIds = Object.keys(logs);
   const [activeTab, setActiveTab] = useState(simulationIds[0] || null);
@@ -137,6 +138,16 @@ const TabbedMessagePanel = ({
           );
         })}
       </div>
+      {summary && (
+        <div style={{ marginTop: '16px', background: '#eef', padding: '10px', borderRadius: '4px' }}>
+          <h4>📊 Simulation Summary</h4>
+          <p>Algorithm: <strong>{summary.algorithm}</strong></p>
+          <p>Total Hops: <strong>{summary.totalHops}</strong></p>
+          <p>Total Cost: <strong>{summary.totalCost}</strong></p>
+          <p>Retries: <strong>{summary.retryCount}</strong></p>
+        </div>
+      )}
+
     </div>
   );
 };
