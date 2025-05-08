@@ -82,5 +82,6 @@ export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoa
     nodeSnapshots: state.nodeSnapshots,
     dispatch,
     linkUsage,
+    summaries,
   };
 }
