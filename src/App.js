@@ -40,6 +40,7 @@ function App() {
     nodeSnapshots,
     dispatch,
     linkUsage,
+    summaries,
   } = useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory);
 
   const sendMessage = useSendMessage({
