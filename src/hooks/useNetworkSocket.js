@@ -1,87 +1,77 @@
-import { useEffect, useReducer, useState } from 'react';
-import io from 'socket.io-client';
-import { simulationReducer, initialState } from './simulationReducer';
+import React, { useEffect, useRef } from 'react';
+import { Network } from 'vis-network/standalone';
 
-const socket = io('http://localhost:8000');
+const getEdgeColor = (usage) => {
+  if (usage >= 20) return '#d32f2f'; // red
+  if (usage >= 10) return '#f57c00'; // orange
+  if (usage >= 5) return '#fbc02d';  // yellow
+  return '#4caf50';                 // green
+};
 
-export default function useNetworkSocket(activeSimId, setNodes, setEdges, setLoading, setSwitchMemory) {
-  const [state, dispatch] = useReducer(simulationReducer, initialState);
-  const [summaries, setSummaries] = useState({});
-  const [linkUsage, setLinkUsage] = useState({});
+const NetworkVisualization = ({
+  nodes,
+  edges,
+  animatePath,
+  nodeLabels,
+  linkUsage,
+}) => {
+  const containerRef = useRef(null);
+  const networkRef = useRef(null);
 
   useEffect(() => {
-    socket.on('networkUpdate', ({ message, nodes, edges, path, colorId, simulationId }) => {
-      if (!simulationId) return;
+    if (!containerRef.current || nodes.length === 0) return;
 
-      const tag = colorId != null ? `[${colorId}] ` : '';
-      dispatch({ type: 'ADD_LOG', simId: simulationId, message: tag + message });
+    const formattedNodes = nodes.map((node) => ({
+      id: node.id,
+      label: nodeLabels?.[node.id] || node.label || node.id,
+      color: node.color || '#97C2FC',
+    }));
 
-      if (simulationId !== activeSimId) {
-        dispatch({ type: 'INCREMENT_UNREAD', simId: simulationId });
-      }
+    const formattedEdges = edges.map((edge) => {
+      const usageKey = `${edge.from}->${edge.to}`;
+      const usage = linkUsage?.[usageKey] || 0;
 
-      if (Array.isArray(path)) {
-        dispatch({ type: 'ADD_PATH', simId: simulationId, path });
-      }
-
-      const safeNodes = Array.isArray(nodes) ? nodes.filter(n => n && n.id) : [];
-      const safeEdges = Array.isArray(edges) ? edges.filter(e => e && e.from && e.to) : [];
-
-      setNodes(safeNodes);
-      setEdges(safeEdges);
-      setLoading(false);
-
-      dispatch({
-        type: 'ADD_METRICS',
-        simId: simulationId,
-        metrics: {
-          pathLength: path?.length || 0,
-          totalCost: safeEdges.reduce((sum, e) => sum + parseInt(e.label || 0), 0),
-          retries: (state.metricsBySim[simulationId]?.retries || 0) + (message.includes('(retry') ? 1 : 0),
-          drops: (state.metricsBySim[simulationId]?.drops || 0) + (message.includes('❌') ? 1 : 0),
-          nodeCount: safeNodes.length,
-          linkCount: safeEdges.length,
-        },
-      });
-
-      dispatch({ type: 'ADD_SNAPSHOT', simId: simulationId, snapshot: safeNodes });
+      return {
+        from: edge.from,
+        to: edge.to,
+        arrows: 'to',
+        label: edge.label?.toString() || '',
+        color: { color: getEdgeColor(usage) },
+        smooth: true,
+      };
     });
 
-    socket.on('switchLearningUpdate', ({ switchId, learnedTable }) => {
-      setSwitchMemory(prev => ({ ...prev, [switchId]: learnedTable }));
-    });
-
-    socket.on('linkUtilizationUpdate', (usageMap) => {
-      setLinkUsage(usageMap);
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Connection Error:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      socket.off('networkUpdate');
-      socket.off('switchLearningUpdate');
-      socket.off('linkUtilizationUpdate');
-      socket.off('connect_error');
+    const data = {
+      nodes: formattedNodes,
+      edges: formattedEdges,
     };
-  }, [activeSimId, setNodes, setEdges, setLoading, setSwitchMemory, state.metricsBySim]);
-  useEffect(() => {
-    socket.on('simulationSummary', (data) => {
-      setSummaries((prev) => ({ ...prev, [data.simulationId]: data }));
-    });
-  }, [socket]);
 
-  return {
-    socket,
-    logs: state.logs,
-    paths: state.paths,
-    metricsBySim: state.metricsBySim,
-    unreadCounts: state.unreadCounts,
-    nodeSnapshots: state.nodeSnapshots,
-    dispatch,
-    linkUsage,
-    summaries,
-  };
-}
+    const options = {
+      nodes: {
+        shape: 'dot',
+        size: 15,
+        font: { size: 14 },
+      },
+      edges: {
+        font: { align: 'top' },
+        width: 2,
+      },
+      physics: false,
+    };
+
+    if (networkRef.current) {
+      networkRef.current.setData(data);
+    } else {
+      networkRef.current = new Network(containerRef.current, data, options);
+    }
+  }, [nodes, edges, nodeLabels, linkUsage]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: '500px', border: '1px solid #ddd', borderRadius: '6px' }}
+    />
+  );
+};
+
+export default NetworkVisualization;
