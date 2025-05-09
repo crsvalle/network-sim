@@ -129,7 +129,7 @@ function App() {
               dispatch={dispatch}
               onCloseTab={onCloseTab}
               replaySimulation={replaySimulation}
-              summary={summaries[activeSimId]} 
+              summary={activeSimId ? summaries[activeSimId] : null}
             />
 
             <GraphMetrics metrics={currentMetrics} activeSimId={activeSimId} />
